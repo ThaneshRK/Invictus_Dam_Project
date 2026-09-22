@@ -1,0 +1,38 @@
+{
+  "project": {
+    "name": "Idukki Dam Failure Demonstration",
+    "description": "Simulation of a hypothetical breach of the Idukki Dam along the Periyar River.",
+    "study_area_crs": "EPSG:32643"
+  },
+  "datasets": [
+    {
+      "type": "DEM",
+      "name": "SRTM 30m Digital Elevation Model",
+      "source": "USGS Earth Explorer / NASA SRTM",
+      "url": "https://earthexplorer.usgs.gov/",
+      "license": "Public Domain"
+    },
+    {
+      "type": "DAM",
+      "name": "Idukki Dam Arch Geometry",
+      "source": "OpenStreetMap",
+      "url": "https://www.openstreetmap.org/way/12345678",
+      "license": "ODbL"
+    }
+  ],
+  "scenario": {
+    "type": "DAM_BREAK",
+    "parameters": {
+      "initial_water_level": 732.0,
+      "reservoir_volume": 1996000000.0,
+      "breach_width": 150.0,
+      "breach_height": 100.0,
+      "breach_formation_time": 0.5
+    },
+    "time_control": {
+      "duration_hours": 12.0,
+      "timestep_seconds": 1.0,
+      "output_interval_seconds": 300.0
+    }
+  }
+}

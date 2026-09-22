@@ -1,0 +1,113 @@
+{
+  "copernicus_dem_tehri": {
+    "source": "Copernicus GLO-30 DEM (Real Tehri Downstream Reach Clip)",
+    "dataset_id": "COPERNICUS/DEM/GLO30",
+    "date_range": "2021-01-01 to 2021-12-31",
+    "bbox": [
+      78.35,
+      30.1,
+      78.6,
+      30.45
+    ],
+    "crs": "EPSG:4326",
+    "resolution": "30m",
+    "download_date": "2026-09-21"
+  },
+  "s1_flood_extent": {
+    "source": "Sentinel-1 SAR Change Detection (Rishi Ganga Feb 2021 Event)",
+    "dataset_id": "COPERNICUS/S1_GRD",
+    "date_range": "2021-01-15 to 2021-02-15",
+    "bbox": [
+      79.65,
+      30.48,
+      79.8,
+      30.58
+    ],
+    "crs": "EPSG:4326",
+    "resolution": "20m",
+    "download_date": "2026-09-21"
+  },
+  "jrc_gsw_tehri": {
+    "source": "JRC Global Surface Water v1.4 (Tehri Reservoir)",
+    "dataset_id": "JRC/GSW1_4/GlobalSurfaceWater",
+    "date_range": "1984-2021",
+    "bbox": [
+      78.4,
+      30.3,
+      78.55,
+      30.45
+    ],
+    "crs": "EPSG:4326",
+    "resolution": "30m",
+    "download_date": "2026-09-21"
+  },
+  "worldpop_tehri": {
+    "source": "WorldPop Population Count 100m (Real Tehri / Rishi Ganga Region)",
+    "dataset_id": "WorldPop/GP/100m/pop",
+    "date_range": "2020",
+    "bbox": [
+      79.65,
+      30.48,
+      79.8,
+      30.58
+    ],
+    "crs": "EPSG:4326",
+    "resolution": "100m",
+    "download_date": "2026-09-21"
+  },
+  "osm_buildings": {
+    "source": "OpenStreetMap via OSMnx",
+    "dataset_id": "osm_buildings",
+    "date_range": "2026-09-21",
+    "bbox": [
+      79.55,
+      30.5,
+      79.62,
+      30.57
+    ],
+    "crs": "EPSG:4326",
+    "resolution": "vector",
+    "download_date": "2026-09-21"
+  },
+  "osm_roads": {
+    "source": "OpenStreetMap via OSMnx",
+    "dataset_id": "osm_roads",
+    "date_range": "2026-09-21",
+    "bbox": [
+      79.55,
+      30.5,
+      79.62,
+      30.57
+    ],
+    "crs": "EPSG:4326",
+    "resolution": "vector",
+    "download_date": "2026-09-21"
+  },
+  "real_dam.shp": {
+    "source": "CWC/WRIS Open Data (Dam.shp)",
+    "dataset_id": "Dam.shp",
+    "date_range": "2023",
+    "bbox": "National / India",
+    "crs": "EPSG:4326",
+    "resolution": "vector",
+    "download_date": "2026-09-21"
+  },
+  "real_reservoir.shp": {
+    "source": "CWC/WRIS Open Data (Reservoir.shp)",
+    "dataset_id": "Reservoir.shp",
+    "date_range": "2023",
+    "bbox": "National / India",
+    "crs": "EPSG:4326",
+    "resolution": "vector",
+    "download_date": "2026-09-21"
+  },
+  "real_rivers.shp": {
+    "source": "CWC/WRIS Open Data (Rivers.shp)",
+    "dataset_id": "Rivers.shp",
+    "date_range": "2023",
+    "bbox": "National / India",
+    "crs": "EPSG:4326",
+    "resolution": "vector",
+    "download_date": "2026-09-21"
+  }
+}
