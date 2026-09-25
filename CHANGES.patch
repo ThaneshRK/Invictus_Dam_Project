@@ -1,0 +1,1696 @@
+diff --git a/.gitignore b/.gitignore
+index 04f815a..8d0ca6e 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -32,3 +32,9 @@ Thumbs.db
+ 
+ # Large datasets
+ datasets/
++
++# Generated 5x3 matrix outputs (heavy rasters/workspaces).
++# Regenerate with: .venv/bin/python backend/run_dam_matrix.py
++# (matrix_report.md and matrix_summary.json stay tracked)
++data/matrix_results/*/
++data/matrix_results_run.log
+diff --git a/AUDIT_REPORT.md b/AUDIT_REPORT.md
+index b01920e..adf48f0 100644
+--- a/AUDIT_REPORT.md
++++ b/AUDIT_REPORT.md
+@@ -1,5 +1,19 @@
+ # Code Audit Report
+ 
++> **STATUS UPDATE (2026-09-25)** — several gaps below have since been closed; this
++> audit is kept for historical reference:
++> - **SPH 3D**: implemented and wired (`SPH3DSolver` selected via engine `SPH3D` or
++>   `{"dimensions": 3}`; true 3D WCSPH with Tait EOS, 3D kernel/viscosity, terrain
++>   collision). See `docs/simulation/matrix.md`.
++> - **Delft3D**: full workspace builder verified (UGRID mesh via MeshKernel with
++>   correct `num_columns/num_rows`, MDU, structures, `.pli/.bc/.ext` forcing);
++>   executes when a `dflowfm` binary is configured.
++> - **5 dams x 3 scenarios matrix**: `backend/run_dam_matrix.py` runs all 15
++>   combinations (SPH 3D executes; Delft3D workspaces build and are ready to run),
++>   writing results + `data/matrix_results/matrix_report.md`.
++> - **GLB 3D viewer**: implemented (`ScenegraphLayer` + `Dam3DAsset` anchoring +
++>   Asset Alignment UI).
++
+ ## Summary
+ The current repository provides the skeletal structure of a flash-flood / dam-break HADR simulation framework but relies heavily on mock data, stubs, and partial implementations. The React frontend is well-structured but populated with placeholders and simulated API responses. On the backend, a custom Python-based SPH solver exists, but the intended DualSPHysics integration is missing entirely. The Delft3D-FM executor exists but lacks any actual `.mdu` configuration files to run. The Google Earth Engine (GEE) integration contains genuine Earth Engine code but immediately falls back to mock fixtures when credentials are unsupplied. While some real shapefiles (Dam, Reservoir, Rivers) exist in the `datasets/` folder, the codebase does not dynamically run simulations across all planned dams, and the final 5x3 matrix of deliverables is mostly untouched. 
+ 
+diff --git a/README.md b/README.md
+index 755f011..20f38a8 100644
+--- a/README.md
++++ b/README.md
+@@ -6,7 +6,24 @@ This repository contains the complete end-to-end framework for modeling dam brea
+ 1. **FastAPI Backend**: Python 3.11 API for geometry validation, physics orchestration, and data transformation.
+ 2. **React Dashboard**: React/Vite web interface with Leaflet integration.
+ 3. **PostgreSQL/PostGIS**: Spatial relational database.
+-4. **Physics Engines**: Custom SPH prototype and Delft3D adapter.
++4. **Physics Engines**:
++   - **SPH 2D / SPH 3D** — internal NumPy/SciPy smooth-particle-hydrodynamics solvers
++     (depth-averaged SWE-SPH and true 3D weakly-compressible SPH).
++   - **Delft3D-FM adapter** — generates complete D-Flow FM workspaces (UGRID mesh, MDU,
++     structures, boundary forcing) and executes the official solver when installed.
++
++## 5 Dams x 3 Scenarios Matrix
++The complete deliverable matrix (Bhakra, Tehri, Hirakud, Sardar Sarovar, Mettur x
++DAM_BREAK / WATER_RELEASE / RIVER_BLOCKAGE x SPH 3D + Delft3D-FM) runs with one command:
++
++```bash
++.venv/bin/python backend/run_dam_matrix.py
++```
++
++It writes per-run results (max-depth rasters, inundation GeoJSON, metrics), ready-to-run
++Delft3D workspaces, and a `data/matrix_results/matrix_report.md` summary. See
++`docs/simulation/matrix.md` for the full approach and how to enable real `dflowfm`
++execution.
+ 
+ ---
+ 
+diff --git a/TECH_STACK.md b/TECH_STACK.md
+index d601411..5ca8134 100644
+--- a/TECH_STACK.md
++++ b/TECH_STACK.md
+@@ -39,7 +39,7 @@ The framework is built as a microservice-ready, containerized application design
+ | **Language** | [TypeScript](https://www.typescriptlang.org/) | `~6.0.2` | Type-safe front-end development |
+ | **Build Tooling** | [Vite](https://vitejs.dev/) | `^8.3.0` | Ultra-fast module bundler & dev server |
+ | **Spatial Maps** | [Leaflet](https://leafletjs.com/) & [React-Leaflet](https://react-leaflet.js.org/) | `^1.9.4` / `^5.0.0` | Interactive 2D map views & layer rendering |
+-| **Map Drawing** | [Leaflet-Draw](https://github.com/Leaflet/Leaflet.draw) | `^0.4.14` | ROI and bounding box drawing tools |
++| **Map Drawing** | [Leaflet-Draw](https://github.com/Leaflet/Leaflet.draw) | `^1.0.4` | ROI and bounding box drawing tools |
+ | **3D & Layer Visualization** | [Deck.gl](https://deck.gl/) | `^9.4.0` | High-performance WebGL geospatial data rendering |
+ | **Vector Tiles & Basemaps** | [MapLibre GL](https://maplibre.org/) | `^6.9.1` | MapLibre vector map rendering |
+ | **Charts & Analytics** | [Recharts](https://recharts.org/) | `^3.10.1` | Hydrographs, depth distributions, and comparison charts |
+diff --git a/backend/app/api/endpoints/jobs.py b/backend/app/api/endpoints/jobs.py
+index 9163baa..0bd3108 100644
+--- a/backend/app/api/endpoints/jobs.py
++++ b/backend/app/api/endpoints/jobs.py
+@@ -64,13 +64,15 @@ async def run_simulation_task(job_id: uuid.UUID):
+         
+         engine_name = job.engine.upper()
+         
+-        if engine_name == "SPH":
++        if engine_name in ("SPH", "SPH2D"):
+             engine = SPHEngine(context)
++        elif engine_name == "SPH3D":
++            engine = SPHEngine(context, use_3d=True)
+         elif engine_name == "DELFT3D":
+             engine = Delft3DEngine(context)
+         else:
+             job.status = JobStatus.PREPARATION_FAILED
+-            job.error = f"Unknown Engine: {job.engine}"
++            job.error = f"Unknown Engine: {job.engine}. Valid engines: SPH, SPH2D, SPH3D, DELFT3D"
+             await db.commit()
+             return
+ 
+diff --git a/backend/app/engines/delft3d/builder.py b/backend/app/engines/delft3d/builder.py
+index 5ec8911..1b8f73e 100644
+--- a/backend/app/engines/delft3d/builder.py
++++ b/backend/app/engines/delft3d/builder.py
+@@ -39,9 +39,8 @@ class Delft3DModelBuilder:
+         self.bounds = [0.0, 0.0, 1000.0, 1000.0]
+         dem_path = None
+         if self.context.dem:
+-            dem_path = getattr(self.context.dem, "file_path", None)
+-            if not dem_path and getattr(self.context.dem, "metadata_", None) and isinstance(self.context.dem.metadata_, dict):
+-                dem_path = self.context.dem.metadata_.get("file_path")
++            from app.engines.utils import resolve_dataset_path
++            dem_path = resolve_dataset_path(self.context.dem)
+ 
+         if dem_path and os.path.exists(dem_path):
+             with rasterio.open(dem_path) as src:
+@@ -99,9 +98,8 @@ class Delft3DModelBuilder:
+         """Samples DEM and generates .xyz bathymetry file. Returns relative path or empty string."""
+         dem_file_path = None
+         if self.context.dem:
+-            dem_file_path = getattr(self.context.dem, "file_path", None)
+-            if not dem_file_path and getattr(self.context.dem, "metadata_", None) and isinstance(self.context.dem.metadata_, dict):
+-                dem_file_path = self.context.dem.metadata_.get("file_path")
++            from app.engines.utils import resolve_dataset_path
++            dem_file_path = resolve_dataset_path(self.context.dem)
+ 
+         if dem_file_path and os.path.exists(dem_file_path):
+             ts = Delft3DTerrainSampler(self.workspace_path)
+diff --git a/backend/app/engines/sph/builder.py b/backend/app/engines/sph/builder.py
+index 141a6b7..23c6e5a 100644
+--- a/backend/app/engines/sph/builder.py
++++ b/backend/app/engines/sph/builder.py
+@@ -1,11 +1,16 @@
+ import os
++import logging
+ from typing import Dict, Any, Tuple
++import numpy as np
+ import rasterio
+ from app.core.simulation_context import SimulationInputContext
+ from app.engines.sph.boundary import TerrainHandler, DynamicBreach
++from app.engines.utils import resolve_dataset_path
+ from geoalchemy2.shape import to_shape
+ import shapely.geometry
+ 
++logger = logging.getLogger(__name__)
++
+ class SPHInputBuilder:
+     """
+     Translates the validated SimulationInputContext into SPH engine configuration and geometries.
+@@ -23,26 +28,32 @@ class SPHInputBuilder:
+         terrain = None
+         dem_path = None
+         
+-        if self.context.dem:
+-            dem_path = getattr(self.context.dem, "file_path", None)
+-            if not dem_path and getattr(self.context.dem, "metadata_", None) and isinstance(self.context.dem.metadata_, dict):
+-                dem_path = self.context.dem.metadata_.get("file_path")
+-                
++        dem_path = resolve_dataset_path(self.context.dem)
++
+         if dem_path and os.path.exists(dem_path):
+             try:
+                 terrain = TerrainHandler.from_geotiff(dem_path)
+                 with rasterio.open(dem_path) as src:
+                     domain_bounds = [src.bounds.left, src.bounds.right, src.bounds.bottom, src.bounds.top]
+             except Exception as err:
+-                import logging
+-                logging.getLogger(__name__).warning(f"Could not parse DEM geotiff {dem_path}: {err}")
++                logger.warning(f"Could not parse DEM geotiff {dem_path}: {err}")
+         
+         if terrain is None:
+             if hasattr(self.context, 'study_area') and self.context.study_area:
+                 study_geom = to_shape(self.context.study_area)
+                 b = study_geom.bounds
+                 domain_bounds = [b[0], b[2], b[1], b[3]]
+-            terrain = TerrainHandler(nx=50, ny=50, domain_bounds=domain_bounds)
++            # Flat synthetic fallback terrain (50x50) spanning the domain,
++            # so the solver degrades gracefully instead of crashing.
++            logger.warning(
++                "SPH builder: no usable DEM provided; falling back to flat synthetic terrain "
++                f"over bounds {domain_bounds}. Results are schematic only."
++            )
++            fallback_grid = np.zeros((50, 50), dtype=np.float64)
++            fallback_transform = rasterio.transform.from_bounds(
++                domain_bounds[0], domain_bounds[2], domain_bounds[1], domain_bounds[3], 50, 50
++            )
++            terrain = TerrainHandler(fallback_grid, fallback_transform)
+ 
+         # 2. Dam Geometry
+         dam_geom = to_shape(self.context.dam.geometry)
+@@ -67,10 +78,17 @@ class SPHInputBuilder:
+                 "ymin": r_miny, "ymax": r_maxy
+             })
+             
+-        # 5. Dam Break Parameters
++        # 5. Dam representation & breach parameters
++        #
++        # The prototype represents the dam as a vertical AABB wall (DynamicBreach)
++        # centred on the dam location:
++        #   DAM_BREAK      -> wall fails at failure_time and erodes to breach_width
++        #   WATER_RELEASE  -> wall stays, spillway gates open a narrow release_width
++        #   RIVER_BLOCKAGE -> wall never fails (failure_time = inf); the downstream
++        #                     landslide blockage is what fails (handled by the engine)
+         breach = None
++        breach_width = self.params.get("breach_width", 20.0)
+         if scen_type == "DAM_BREAK":
+-            breach_width = self.params.get("breach_width", 20.0)
+             breach = DynamicBreach(
+                 xmin=dam_x - breach_width/2.0, xmax=dam_x + breach_width/2.0,
+                 ymin=dam_y - 10.0, ymax=dam_y + 10.0, # Approximate breach bounding along dam
+@@ -78,6 +96,23 @@ class SPHInputBuilder:
+                 formation_time=self.params.get("formation_time", 5.0),
+                 final_width=breach_width
+             )
++        elif scen_type == "WATER_RELEASE":
++            release_width = self.params.get("release_width", max(5.0, 0.1 * breach_width))
++            breach = DynamicBreach(
++                xmin=dam_x - release_width/2.0, xmax=dam_x + release_width/2.0,
++                ymin=dam_y - 10.0, ymax=dam_y + 10.0,
++                failure_time=self.params.get("failure_time", 1.0),
++                formation_time=self.params.get("formation_time", 2.0),
++                final_width=release_width
++            )
++        elif scen_type == "RIVER_BLOCKAGE":
++            breach = DynamicBreach(
++                xmin=dam_x - breach_width/2.0, xmax=dam_x + breach_width/2.0,
++                ymin=dam_y - 10.0, ymax=dam_y + 10.0,
++                failure_time=float("inf"),  # dam stays intact; landslide blockage fails instead
++                formation_time=1.0,
++                final_width=breach_width
++            )
+ 
+         # 6. Hydrology
+         initial_water_level = self.params.get("initial_water_level", 20.0)
+@@ -94,6 +129,7 @@ class SPHInputBuilder:
+             "blockages": blockages,
+             "breach": breach,
+             "duration_s": self.context.scenario.simulation_duration * 3600,
++            "duration_cap_s": float(self.params.get("duration_cap_s", 5.0)),
+             "scenario_type": scen_type,
+             "particle_spacing": self.params.get("particle_spacing", 1.0),
+             "smoothing_length": self.params.get("smoothing_length", 2.0)
+diff --git a/backend/app/engines/sph/engine.py b/backend/app/engines/sph/engine.py
+index 4f94337..9274180 100644
+--- a/backend/app/engines/sph/engine.py
++++ b/backend/app/engines/sph/engine.py
+@@ -17,8 +17,12 @@ class SPHEngine(SimulationEngine):
+     """
+     SPH Simulation Engine Implementation.
+     Orchestrates the modular solver, inputs, and outputs.
++
++    Dimensionality:
++      - 2D depth-averaged SWE-SPH (default, engine="SPH")
++      - 3D weakly-compressible SPH (engine="SPH3D" or scenario parameter {"dimensions": 3})
+     """
+-    def __init__(self, context: Any):
++    def __init__(self, context: Any, use_3d: bool = False):
+         super().__init__(context)
+         self.solver = None
+         self.writer = None
+@@ -34,6 +38,13 @@ class SPHEngine(SimulationEngine):
+         self.scenario_type = st.value if hasattr(st, 'value') else str(st)
+         self.is_benchmark = False # Benchmarks should use a different testing engine path now
+         
++        params = getattr(self.context.scenario, "parameters", None) or {}
++        try:
++            requested_dims = int(params.get("dimensions", 2))
++        except (TypeError, ValueError):
++            requested_dims = 2
++        self.use_3d = bool(use_3d) or requested_dims == 3
++        
+         self.diagnostics = {}
+ 
+     def validate(self) -> bool:
+@@ -87,8 +98,12 @@ class SPHEngine(SimulationEngine):
+         particle_spacing = inputs["particle_spacing"]
+         h = inputs["smoothing_length"]
+         
+-        # Determine 2D vs 3D based on context engine choice if needed, but default 2D
+-        self.solver = SPH2DSolver(max_particles=self.max_particles, h=h)
++        # Solver dimensionality: 2D SWE-SPH (default) or true 3D WCSPH
++        if self.use_3d:
++            logger.info("SPH Engine: initializing 3D WCSPH solver.")
++            self.solver = SPH3DSolver(max_particles=self.max_particles, h=h)
++        else:
++            self.solver = SPH2DSolver(max_particles=self.max_particles, h=h)
+         
+         try:
+             self.solver.init_real_scenario(
+@@ -108,7 +123,10 @@ class SPHEngine(SimulationEngine):
+         self.writer = ResultWriter(bounds=self.domain_bounds, resolution=particle_spacing)
+         
+         duration_s = inputs["duration_s"]
+-        duration_s = min(duration_s, 5.0) # testing cap
++        # Prototype safety cap (seconds of simulated time). Overridable per-scenario
++        # via the "duration_cap_s" parameter; default keeps the historical 5 s cap.
++        duration_cap_s = float(inputs.get("duration_cap_s", 5.0))
++        duration_s = min(duration_s, duration_cap_s)
+         
+         self.total_steps = int(duration_s / self.solver.integrator.max_dt)
+         self.duration_s = duration_s
+@@ -188,7 +206,8 @@ class SPHEngine(SimulationEngine):
+         res = self.writer.get_final_results()
+         # Attach scientific output metadata
+         res["metadata"] = {
+-            "sph_formulation": "2D SWE-SPH",
++            "sph_formulation": "3D WCSPH (Tait EOS)" if self.use_3d else "2D SWE-SPH",
++            "solver_dimensionality": 3 if self.use_3d else 2,
+             "solver_version": "2.0 (Vectorized)",
+             "particle_count": self.solver.state.num_particles if self.solver else 0,
+             "crs": res.get("crs"),
+diff --git a/backend/app/engines/sph/physics.py b/backend/app/engines/sph/physics.py
+index 4342c1b..03d550b 100644
+--- a/backend/app/engines/sph/physics.py
++++ b/backend/app/engines/sph/physics.py
+@@ -147,20 +147,22 @@ class Physics3DSolver(PhysicsSolver):
+         N = state.num_particles
+         fluid_idx = state.get_fluid_indices()
+         
+-        state.rho[:N] = 0.0
+-        
++        # Density summation via bincount (buffered scatter — mathematically identical
++        # to np.add.at but 10-50x faster for large pair lists)
+         if len(i) > 0:
+             pos_i = state.pos[i]
+             pos_j = state.pos[j]
+             mass_j = state.mass[j]
+             
+             r_vec = pos_i - pos_j
+-            r = np.linalg.norm(r_vec, axis=1)
++            r = np.sqrt(np.einsum('ij,ij->i', r_vec, r_vec))
+             
+             W_r = self.kernel.W(r)
+             rho_contrib = mass_j * W_r
+-            np.add.at(state.rho, i, rho_contrib)
+-            
++            state.rho[:N] = np.bincount(i, weights=rho_contrib, minlength=N)[:N]
++        else:
++            state.rho[:N] = 0.0
++        
+         W_0 = self.kernel.W(0.0)
+         if isinstance(W_0, np.ndarray):
+             W_0 = W_0[0]
+@@ -184,20 +186,15 @@ class Physics3DSolver(PhysicsSolver):
+         
+         if len(i) > 0:
+             h = self.kernel.h
+-            mask = i != j
+-            i_m = i[mask]
+-            j_m = j[mask]
++            # query_pairs() only yields distinct pairs within the 2h support radius,
++            # so no self-pair / out-of-support masking is needed here.
++            i_m = i
++            j_m = j
+             
+             pos_i = state.pos[i_m]
+             pos_j = state.pos[j_m]
+             r_vec = pos_i - pos_j
+-            r = np.linalg.norm(r_vec, axis=1)
+-            
+-            mask_r = (r > 0) & (r <= 2 * h)
+-            i_m = i_m[mask_r]
+-            j_m = j_m[mask_r]
+-            r_vec = r_vec[mask_r]
+-            r = r[mask_r]
++            r = np.sqrt(np.einsum('ij,ij->i', r_vec, r_vec))
+             
+             if len(i_m) > 0:
+                 rho_i = state.rho[i_m]
+@@ -213,7 +210,7 @@ class Physics3DSolver(PhysicsSolver):
+                 pressure_term = (p_i / (rho_i**2)) + (p_j / (rho_j**2))
+                 
+                 pi_ij = np.zeros(len(i_m), dtype=np.float64)
+-                v_dot_r = np.sum(v_vec * r_vec, axis=1)
++                v_dot_r = np.einsum('ij,ij->i', v_vec, r_vec)
+                 visc_mask = v_dot_r < 0
+                 
+                 if np.any(visc_mask):
+@@ -233,6 +230,8 @@ class Physics3DSolver(PhysicsSolver):
+                 
+                 acc_contrib = -mass_j[:, np.newaxis] * total_term[:, np.newaxis] * grad_W
+                 
+-                np.add.at(state.acc[:, 0], i_m, acc_contrib[:, 0])
+-                np.add.at(state.acc[:, 1], i_m, acc_contrib[:, 1])
+-                np.add.at(state.acc[:, 2], i_m, acc_contrib[:, 2])
++                # Buffered scatter (identical accumulation, far faster than np.add.at)
++                for k in range(3):
++                    state.acc[:N, k] += np.bincount(
++                        i_m, weights=acc_contrib[:, k], minlength=N
++                    )
+diff --git a/backend/app/engines/sph/solver.py b/backend/app/engines/sph/solver.py
+index e1503a5..a644846 100644
+--- a/backend/app/engines/sph/solver.py
++++ b/backend/app/engines/sph/solver.py
+@@ -158,6 +158,8 @@ class SPH3DSolver(SPHSolverBase):
+                 
+         points_3d = np.array(points_3d)
+         N_req = len(points_3d)
++        if N_req == 0:
++            raise ValueError("No wet cells found: initial water level is below terrain everywhere in the water polygon.")
+         if N_req > self.max_particles:
+             raise ValueError(f"Requested particles ({N_req}) exceeds 3D limit ({self.max_particles}).")
+             
+@@ -169,7 +171,11 @@ class SPH3DSolver(SPHSolverBase):
+         self.state.add_particles(points_3d, vels, masses, ParticleType.FLUID)
+         self.initial_volume = N_req * (spacing**3)
+         
+-        self.boundary_handler = BoundaryHandler(bounds=bounds)
++        # Vertical domain bounds: [bed floor .. initial water surface + 1 spacing headroom]
++        z_floor = float(np.min(z_b_valid)) - spacing
++        z_ceil = float(initial_water_surface_elevation) + spacing
++        bounds_3d = list(bounds) + [z_floor, z_ceil] if len(bounds) == 4 else list(bounds)
++        self.boundary_handler = BoundaryHandler(bounds=bounds_3d)
+         for block in blockages:
+             self.boundary_handler.add_blockage(**block)
+             
+@@ -178,6 +184,10 @@ class SPH3DSolver(SPHSolverBase):
+             
+         self.terrain_handler = terrain_handler
+         
++        # Seed per-particle bed elevation (used by the 3D grid interpolation branch)
++        z_seed, _ = terrain_handler.get_elevation_and_gradient(points_3d[:, :2])
++        self.state.z_b[:self.state.num_particles] = z_seed
++        
+     def step(self):
+         if self.state.num_particles == 0:
+             return
+@@ -188,6 +198,9 @@ class SPH3DSolver(SPHSolverBase):
+         pos_2d = self.state.pos[fluid_idx, :2]
+         z_b, grad_z = self.terrain_handler.get_elevation_and_gradient(pos_2d)
+         
++        # Keep per-particle bed elevation current for result spatialization
++        self.state.z_b[fluid_idx] = z_b
++        
+         # Particles below terrain get pushed up
+         below_terrain = self.state.pos[fluid_idx, 2] < z_b
+         if np.any(below_terrain):
+diff --git a/backend/app/engines/utils.py b/backend/app/engines/utils.py
+new file mode 100644
+index 0000000..07ddde2
+--- /dev/null
++++ b/backend/app/engines/utils.py
+@@ -0,0 +1,29 @@
++"""
++Shared helpers for simulation engine input adapters.
++"""
++from typing import Any, Optional
++
++
++def resolve_dataset_path(dataset: Any) -> Optional[str]:
++    """
++    Resolves the on-disk file path of a dataset-like object.
++
++    Supports:
++      - Real `Dataset` ORM models (`.file_path` column, `.metadata_` JSONB)
++      - Test/mock contexts exposing a plain `.metadata` dict
++    """
++    if dataset is None:
++        return None
++
++    path = getattr(dataset, "file_path", None)
++    if path:
++        return path
++
++    for attr in ("metadata_", "metadata"):
++        meta = getattr(dataset, attr, None)
++        if isinstance(meta, dict):
++            path = meta.get("file_path")
++            if path:
++                return path
++
++    return None
+diff --git a/backend/app/services/delft3d/mesh/generator.py b/backend/app/services/delft3d/mesh/generator.py
+index 6047e9d..eb36ff1 100644
+--- a/backend/app/services/delft3d/mesh/generator.py
++++ b/backend/app/services/delft3d/mesh/generator.py
+@@ -56,6 +56,11 @@ class Delft3DMeshGenerator:
+             block_size_x=resolution,
+             block_size_y=resolution
+         )
++        # MeshKernel >= 8 derives the grid from num_columns/num_rows (defaults are
++        # 3x3 and upper_right is NOT used by mesh2d_make_rectangular_mesh), so we
++        # compute the counts explicitly from the bounds and requested resolution.
++        make_grid_parameters.num_columns = max(1, int(round((xmax - xmin) / resolution)))
++        make_grid_parameters.num_rows = max(1, int(round((ymax - ymin) / resolution)))
+ 
+         # Compute the regular unstructured Mesh2D
+         mk.mesh2d_make_rectangular_mesh(make_grid_parameters)
+diff --git a/backend/run_dam_matrix.py b/backend/run_dam_matrix.py
+new file mode 100644
+index 0000000..d064cc2
+--- /dev/null
++++ b/backend/run_dam_matrix.py
+@@ -0,0 +1,682 @@
++#!/usr/bin/env python3
++"""
++Dam Break Scenario Matrix Runner — 5 dams x 3 scenarios x 2 engines.
++
++Runs the complete deliverable matrix WITHOUT requiring the API/DB stack:
++
++  Dams       : Bhakra, Tehri, Hirakud, Sardar Sarovar, Mettur
++               (static government fixtures in data/fixtures/government/)
++  Scenarios  : DAM_BREAK, WATER_RELEASE (controlled release), RIVER_BLOCKAGE
++  Engines    : SPH 3D (true 3D WCSPH, internal solver)
++               Delft3D-FM (full workspace build: mesh/MDU/structures/forcing;
++                           executed only when the dflowfm binary is installed)
++
++Outputs (under data/matrix_results/):
++  {dam}/{scenario}/sph3d_result.json        - metrics + diagnostics
++  {dam}/{scenario}/sph3d_inundation.geojson - max-depth footprint (WGS84)
++  {dam}/{scenario}/sph3d_max_depth.tif      - max depth raster (UTM)
++  {dam}/{scenario}/delft3d_status.json      - workspace status/file inventory
++  {dam}/inputs/dem.tif                      - terrain used (real or synthetic)
++  matrix_summary.json                       - machine-readable matrix
++  matrix_report.md                          - human-readable 5x3 matrix report
++
++Usage:
++  .venv/bin/python backend/run_dam_matrix.py                # full matrix
++  .venv/bin/python backend/run_dam_matrix.py --dams tehri   # subset
++  .venv/bin/python backend/run_dam_matrix.py --scenarios DAM_BREAK --engines SPH3D
++"""
++import argparse
++import json
++import logging
++import math
++import os
++import sys
++import time
++import traceback
++from datetime import datetime, timezone
++from pathlib import Path
++from types import SimpleNamespace
++
++import numpy as np
++import rasterio
++from rasterio.transform import from_origin
++from rasterio.warp import reproject, Resampling
++
++BACKEND_DIR = Path(__file__).resolve().parent
++REPO_ROOT = BACKEND_DIR.parent
++sys.path.insert(0, str(BACKEND_DIR))
++
++from app.engines.sph.engine import SPHEngine                      # noqa: E402
++from app.engines.sph.boundary import TerrainHandler               # noqa: E402
++from app.engines.delft3d.builder import Delft3DModelBuilder       # noqa: E402
++from app.engines.delft3d.executor import HostDelft3DExecutor      # noqa: E402
++from app.engines.delft3d.parser import Delft3DResultParser        # noqa: E402
++
++import shapely.geometry                                            # noqa: E402
++import shapely.ops                                                 # noqa: E402
++from geoalchemy2.shape import from_shape                          # noqa: E402
++from pyproj import Transformer                                    # noqa: E402
++
++logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
++logger = logging.getLogger("dam_matrix")
++
++FIXTURE_ROOT = REPO_ROOT / "data" / "fixtures" / "government"
++OUT_ROOT = REPO_ROOT / "data" / "matrix_results"
++REAL_TEHRI_DEM = REPO_ROOT / "tests" / "data_real" / "copernicus_dem_tehri.tif"
++
++DAM_ORDER = ["bhakra", "tehri", "hirakud", "sardar_sarovar", "mettur"]
++SCENARIOS = ["DAM_BREAK", "WATER_RELEASE", "RIVER_BLOCKAGE"]
++
++DOMAIN_HALF = 700.0          # m; domain is 1.4 km x 1.4 km around the dam
++DEM_RES = 10.0               # m per cell
++TARGET_SPH_PARTICLES = 9000  # 3D particle budget per run
++
++# ---------------------------------------------------------------- fixtures
++
++
++def load_dam_system(dam_id: str) -> dict:
++    dam = json.loads((FIXTURE_ROOT / "dams" / f"{dam_id}.json").read_text())
++    hydro = json.loads((FIXTURE_ROOT / "hydrology" / f"{dam_id}.json").read_text())
++    return {"id": dam_id, "dam": dam, "hydrology": hydro}
++
++
++def latest_hydro_values(hydro: dict) -> dict:
++    """Pulls the most recent water level / inflow / outflow from the fixture."""
++    out = {"water_level": None, "inflow": None, "outflow": None}
++    obs = hydro.get("observations") or []
++    for o in obs:
++        for key in out:
++            entry = o.get(key)
++            if isinstance(entry, dict) and entry.get("value") is not None:
++                out[key] = float(entry["value"])
++    return out
++
++
++# ---------------------------------------------------------------- terrain
++
++
++def utm_epsg_for_lon(lon: float) -> int:
++    zone = int((lon + 180.0) // 6) + 1
++    return 32600 + zone  # northern hemisphere
++
++
++def domain_bounds_for(dam_lon: float, dam_lat: float, epsg: int) -> tuple:
++    """1.4 km UTM box centred on the dam."""
++    tf = Transformer.from_crs("EPSG:4326", f"EPSG:{epsg}", always_xy=True)
++    dx, dy = tf.transform(dam_lon, dam_lat)
++    return (dx - DOMAIN_HALF, dy - DOMAIN_HALF, dx + DOMAIN_HALF, dy + DOMAIN_HALF), (dx, dy)
++
++
++def build_synthetic_dem(bounds: tuple, dam_xy: tuple, z0: float) -> np.ndarray:
++    """
++    Schematic valley DEM (metres, UTM):
++      - river axis runs west->east, dam at dam_xy (north-south wall line)
++      - reservoir basin upstream (west), steeper gorge downstream (east)
++      - parabolic valley walls
++    Returns the elevation array; the caller persists it via write_dem().
++    """
++    xmin, ymin, xmax, ymax = bounds
++    nx = int(round((xmax - xmin) / DEM_RES))
++    ny = int(round((ymax - ymin) / DEM_RES))
++    xs = np.linspace(xmin + DEM_RES / 2, xmax - DEM_RES / 2, nx)
++    ys = np.linspace(ymax - DEM_RES / 2, ymin + DEM_RES / 2, ny)  # north -> south rows
++    xx, yy = np.meshgrid(xs, ys)
++
++    dam_x, dam_y = dam_xy
++    dx = xx - dam_x
++    dy = np.abs(yy - dam_y)
++
++    bed = np.where(
++        dx <= 0,
++        z0 + 0.004 * (-dx),              # gentle upstream basin slope
++        z0 - 0.018 * dx,                 # steeper downstream gorge
++    )
++    half_width = np.where(dx <= 0, 350.0, 220.0)
++    walls = 90.0 * (dy / half_width) ** 2
++    return (bed + walls).astype(np.float32)
++
++
++def write_dem(array: np.ndarray, bounds: tuple, epsg: int, out_path: Path) -> None:
++    ny, nx = array.shape
++    out_path.parent.mkdir(parents=True, exist_ok=True)
++    with rasterio.open(
++        out_path, "w", driver="GTiff", height=ny, width=nx, count=1,
++        dtype="float32", crs=f"EPSG:{epsg}",
++        transform=from_origin(bounds[0], bounds[3], DEM_RES, DEM_RES),
++    ) as dst:
++        dst.write(array.astype(np.float32), 1)
++
++
++def build_real_dem_clip(bounds: tuple, epsg: int, src_path: Path, out_path: Path) -> bool:
++    """Reprojects a window of a real DEM to the UTM domain at DEM_RES."""
++    try:
++        with rasterio.open(src_path) as src:
++            nx = int(round((bounds[2] - bounds[0]) / DEM_RES))
++            ny = int(round((bounds[3] - bounds[1]) / DEM_RES))
++            dst_crs = f"EPSG:{epsg}"
++            transform = from_origin(bounds[0], bounds[3], DEM_RES, DEM_RES)
++            data = np.full((ny, nx), np.nan, dtype=np.float32)
++            reproject(
++                source=rasterio.band(src, 1), destination=data,
++                src_transform=src.transform, src_crs=src.crs,
++                dst_transform=transform, dst_crs=dst_crs,
++                resampling=Resampling.bilinear,
++            )
++        if np.all(np.isnan(data)):
++            return False
++        data = np.where(np.isnan(data), np.nanmedian(data), data)
++        write_dem(data, bounds, epsg, out_path)
++        return True
++    except Exception as err:
++        logger.warning(f"Real DEM clip failed ({err}); falling back to synthetic.")
++        return False
++
++
++# ---------------------------------------------------------------- contexts
++
++
++
++
++def pick_water_level(terrain: TerrainHandler, water_box: list, head: float) -> float:
++    """
++    Chooses an initial water surface elevation:
++    the reservoir/lake bed (5th-percentile terrain, robust to outlier cells) plus
++    the scenario head, raised until >= 50% of the box is wet.
++    Depth at the channel is therefore ~head, as intended per dam.
++    """
++    xmin, xmax, ymin, ymax = water_box
++    gx = np.arange(xmin, xmax, 10.0)
++    gy = np.arange(ymin, ymax, 10.0)
++    xx, yy = np.meshgrid(gx, gy)
++    pts = np.vstack([xx.ravel(), yy.ravel()]).T
++    z_b, _ = terrain.get_elevation_and_gradient(pts)
++    wl = float(np.percentile(z_b, 5)) + head
++    for _ in range(8):
++        if np.mean(z_b < wl) >= 0.5:
++            break
++        wl += 4.0
++    return wl
++
++
++def count_3d_particles(terrain: TerrainHandler, water_box: list, wl: float, spacing: float) -> int:
++    xmin, xmax, ymin, ymax = water_box
++    gx = np.arange(xmin, xmax, spacing)
++    gy = np.arange(ymin, ymax, spacing)
++    xx, yy = np.meshgrid(gx, gy)
++    pts = np.vstack([xx.ravel(), yy.ravel()]).T
++    z_b, _ = terrain.get_elevation_and_gradient(pts)
++    depths = wl - z_b[z_b < wl]
++    if len(depths) == 0:
++        return 0
++    return int(np.sum(np.ceil(depths / spacing)))
++
++
++def choose_spacing(terrain: TerrainHandler, water_box: list, wl: float,
++                   start: float = 6.0, cap: float = 18.0) -> float:
++    spacing = start
++    while spacing < cap and count_3d_particles(terrain, water_box, wl, spacing) > TARGET_SPH_PARTICLES:
++        spacing += 2.0
++    return spacing
++
++
++class ScenarioSpec:
++    """Per-(dam, scenario) configuration: geometry + parameters for both engines."""
++
++    def __init__(self, name, scenario_type, water_box, blockage_box, params,
++                 duration_hours, duration_cap_s, dem_path, dam_xy, epsg, wl):
++        self.name = name
++        self.scenario_type = scenario_type
++        self.water_box = water_box
++        self.blockage_box = blockage_box
++        self.params = params
++        self.duration_hours = duration_hours
++        self.duration_cap_s = duration_cap_s
++        self.dem_path = dem_path
++        self.dam_xy = dam_xy
++        self.epsg = epsg
++        self.wl = wl
++
++    # -- objects shaped like the SimulationInputContext the engines expect --
++    def context(self):
++        dam_x, dam_y = self.dam_xy
++        xmin, xmax, ymin, ymax = self.water_box
++        return SimpleNamespace(
++            project=SimpleNamespace(id="matrix-runner", name="5x3 Matrix"),
++            scenario=SimpleNamespace(
++                scenario_type=SimpleNamespace(value=self.scenario_type),
++                simulation_duration=self.duration_hours,
++                timestep=1.0,
++                output_interval=600.0,
++                parameters=dict(self.params),
++            ),
++            dem=SimpleNamespace(metadata={"file_path": str(self.dem_path)}),
++            hydrology=None,
++            dam=SimpleNamespace(geometry=from_shape(shapely.geometry.Point(dam_x, dam_y), srid=self.epsg)),
++            reservoir=SimpleNamespace(
++                geometry=from_shape(shapely.geometry.box(xmin, ymin, xmax, ymax), srid=self.epsg)
++            ),
++            river=SimpleNamespace(
++                geometry=from_shape(
++                    shapely.geometry.box(*self.blockage_box) if self.blockage_box
++                    else shapely.geometry.Point(dam_x + 300.0, dam_y),
++                    srid=self.epsg,
++                )
++            ),
++            study_area=None,
++        )
++
++
++def build_specs(system: dict, dem_path: Path, epsg: int, bounds: tuple,
++                dam_xy: tuple, dem_source: str) -> list:
++    """Builds the three ScenarioSpecs for one dam from its static fixture data."""
++    dam = system["dam"]
++    hydro = latest_hydro_values(system["hydrology"])
++    dam_x, dam_y = dam_xy
++
++    terrain = TerrainHandler.from_geotiff(str(dem_path))
++    dam_height = float(dam.get("dam_height_m") or 100.0)
++    dam_length = float(dam.get("dam_length_m") or 300.0)
++    # Prototype-scale head: scaled from the real dam height but capped so the
++    # 1.4 km demo domain and particle budget stay meaningful (per-dam differentiated).
++    head = min(0.15 * dam_height, 30.0)
++    # Breach width: USBR-style empirical relation (avg ≈ 3x dam height), capped for the domain.
++    breach_width = min(3.0 * dam_height, 140.0)
++
++    reservoir_box = [dam_x - 600.0, dam_x - 40.0, dam_y - 250.0, dam_y + 250.0]
++    lake_box = [dam_x + 80.0, dam_x + 520.0, dam_y - 150.0, dam_y + 150.0]
++    blockage_box = [dam_x + 540.0, dam_x + 580.0, dam_y - 200.0, dam_y + 200.0]
++
++    wl_res = pick_water_level(terrain, reservoir_box, head)
++    wl_lake = pick_water_level(terrain, lake_box, min(head, 12.0))
++    spacing_res = choose_spacing(terrain, reservoir_box, wl_res)
++    spacing_lake = choose_spacing(terrain, lake_box, wl_lake)
++
++    inflow_q = hydro.get("inflow") or 250.0
++    outflow_q = hydro.get("outflow") or 300.0
++
++    specs = []
++
++    # 1) Catastrophic dam break
++    specs.append(ScenarioSpec(
++        name=f"{dam['dam_name']} - Catastrophic Dam Break",
++        scenario_type="DAM_BREAK",
++        water_box=reservoir_box, blockage_box=None,
++        params={
++            "dimensions": 3,
++            "initial_water_level": wl_res,
++            "breach_width": breach_width,
++            "failure_time": 2.0,
++            "formation_time": 6.0,
++            "particle_spacing": spacing_res,
++            "smoothing_length": 1.3 * spacing_res,  # standard cubic-spline kernel ratio
++            "duration_cap_s": 10.0,
++            # Delft3D-FM parameters (absolute levels, hours for formation)
++            "mesh_resolution": 25.0,
++            "breach_elevation": wl_res + 2.0,
++            "crest_level_min": wl_res - head - 2.0,
++            "breach_formation_time": 1.0,
++        },
++        duration_hours=2.0, duration_cap_s=10.0,
++        dem_path=dem_path, dam_xy=dam_xy, epsg=epsg, wl=wl_res,
++    ))
++
++    # 2) Controlled release (spillway gates)
++    specs.append(ScenarioSpec(
++        name=f"{dam['dam_name']} - Controlled Release",
++        scenario_type="WATER_RELEASE",
++        water_box=reservoir_box, blockage_box=None,
++        params={
++            "dimensions": 3,
++            "initial_water_level": wl_res,
++            "breach_width": breach_width,
++            "release_width": max(12.0, 0.15 * breach_width),
++            "failure_time": 1.0,
++            "formation_time": 3.0,
++            "particle_spacing": spacing_res,
++            "smoothing_length": 1.3 * spacing_res,  # standard cubic-spline kernel ratio
++            "duration_cap_s": 8.0,
++            # Delft3D-FM parameters
++            "mesh_resolution": 25.0,
++            "peak_discharge": outflow_q,
++            "initial_discharge": 0.2 * outflow_q,
++            "release_duration": 1.5,
++            "initial_downstream_condition": 0.1,
++        },
++        duration_hours=2.0, duration_cap_s=8.0,
++        dem_path=dem_path, dam_xy=dam_xy, epsg=epsg, wl=wl_res,
++    ))
++
++    # 3) River blockage (landslide dam in the downstream gorge)
++    specs.append(ScenarioSpec(
++        name=f"{dam['dam_name']} - River Blockage / Landslide Dam Outburst",
++        scenario_type="RIVER_BLOCKAGE",
++        water_box=lake_box, blockage_box=blockage_box,
++        params={
++            "dimensions": 3,
++            "initial_water_level": wl_lake,
++            "breach_width": breach_width,
++            "failure_time": 4.0,          # SPH: blockage removal time (s)
++            "formation_time": 3.0,
++            "particle_spacing": spacing_lake,
++            "smoothing_length": 1.3 * spacing_lake,
++            "duration_cap_s": 10.0,
++            # Delft3D-FM parameters (failure_time in hours for the structure)
++            "mesh_resolution": 25.0,
++            "blockage_width": 40.0,
++            "blockage_height": wl_lake + 6.0,
++            "breach_formation_time": 0.5,
++            "river_discharge": inflow_q,
++            "failure_time_hours": 0.5,
++        },
++        duration_hours=2.0, duration_cap_s=10.0,
++        dem_path=dem_path, dam_xy=dam_xy, epsg=epsg, wl=wl_lake,
++    ))
++
++    for s in specs:
++        s.dem_source = dem_source
++        s.dam_name = dam["dam_name"]
++        s.hydro = hydro
++    return specs
++
++
++# ---------------------------------------------------------------- runners
++
++
++def run_sph3d(spec: ScenarioSpec, run_dir: Path) -> dict:
++    from app.engines.sph.engine import SPHEngine  # local import keeps CLI snappy
++    t0 = time.time()
++    engine = SPHEngine(spec.context(), use_3d=True)
++    entry = {"engine": "SPH3D", "status": "FAILED", "error": None}
++
++    if not engine.validate():
++        entry["error"] = engine.error_message
++        return entry
++    engine.prepare()
++    if engine.status == "FAILED":
++        entry["error"] = engine.error_message
++        return entry
++
++    entry["particle_count"] = int(engine.solver.state.num_particles)
++    engine.run()
++    wall_s = round(time.time() - t0, 2)
++
++    if engine.status != "COMPLETED":
++        entry["error"] = engine.error_message
++        entry["wall_time_s"] = wall_s
++        return entry
++
++    results = engine.load_results()
++    depth = np.array(
++        [[0.0 if v is None else float(v) for v in row] for row in results["max_depth_array"]],
++        dtype=np.float64,
++    )
++    res_cell = abs(results["transform"][0])
++    flooded = depth >= 0.1
++    metrics = {
++        "engine": "SPH3D",
++        "status": "COMPLETED",
++        "error": None,
++        "particle_count": entry["particle_count"],
++        "simulated_time_s": round(engine.solver.time, 2),
++        "wall_time_s": wall_s,
++        "max_depth_m": round(float(depth.max()), 2),
++        "mean_depth_flooded_m": round(float(depth[flooded].mean()), 2) if flooded.any() else 0.0,
++        "flooded_area_km2": round(float(flooded.sum()) * res_cell ** 2 / 1e6, 4),
++        "grid_resolution_m": res_cell,
++        "initial_water_level_m": round(spec.wl, 2),
++        "diagnostics": engine.diagnostics,
++        "metadata": results["metadata"],
++    }
++
++    # Max-depth raster (UTM)
++    run_dir.mkdir(parents=True, exist_ok=True)
++    tif_path = run_dir / "sph3d_max_depth.tif"
++    ny, nx = depth.shape
++    b = results["bounds"]
++    with rasterio.open(
++        tif_path, "w", driver="GTiff", height=ny, width=nx, count=1,
++        dtype="float32", crs=f"EPSG:{spec.epsg}", nodata=-9999.0,
++        transform=rasterio.transform.from_origin(b[0], b[3], res_cell, res_cell),
++    ) as dst:
++        dst.write(np.where(flooded, depth, -9999.0).astype(np.float32), 1)
++
++    # Inundation footprint in WGS84
++    poly = results.get("inundation_polygon")
++    if poly:
++        tf = Transformer.from_crs(f"EPSG:{spec.epsg}", "EPSG:4326", always_xy=True)
++        poly_wgs = shapely.ops.transform(lambda x, y, z=None: tf.transform(x, y), shapely.geometry.shape(poly))
++        fc = {
++            "type": "FeatureCollection",
++            "features": [{
++                "type": "Feature",
++                "properties": {
++                    "dam": spec.dam_name, "scenario": spec.scenario_type, "engine": "SPH3D",
++                    "max_depth_m": metrics["max_depth_m"],
++                    "flooded_area_km2": metrics["flooded_area_km2"],
++                },
++                "geometry": poly_wgs.__geo_interface__,
++            }],
++        }
++        (run_dir / "sph3d_inundation.geojson").write_text(json.dumps(fc))
++
++    return metrics
++
++
++def run_delft3d(spec: ScenarioSpec, workspaces_root: Path, execute: bool = True) -> dict:
++    sim_id = f"{spec.dam_name.split()[0].lower()}_{spec.scenario_type.lower()}"
++    entry = {"engine": "DELFT3D", "status": "FAILED", "error": None}
++    try:
++        builder = Delft3DModelBuilder(
++            workspace_root=str(workspaces_root), simulation_id=sim_id, context=spec.context()
++        )
++        mdu_name = builder.build()
++        entry["workspace"] = builder.workspace_path
++        entry["mdu_file"] = mdu_name
++        entry["files"] = sorted(
++            os.path.relpath(os.path.join(dp, f), builder.workspace_path)
++            for dp, _, files in os.walk(builder.workspace_path) for f in files
++        )
++        entry["build_metadata"] = builder.metadata.get("scenario")
++    except Exception as err:
++        entry["error"] = f"workspace build failed: {err}"
++        logger.exception("Delft3D build failed")
++        return entry
++
++    executor = HostDelft3DExecutor(builder.workspace_path, mdu_name)
++    if not executor.validate_installation():
++        entry["status"] = "WORKSPACE_READY_NO_BINARY"
++        entry["error"] = (
++            "dflowfm binary not installed on this machine — full D-Flow FM workspace "
++            "(mesh/MDU/structures/forcing) generated and ready to execute."
++        )
++        return entry
++
++    if not execute:
++        entry["status"] = "WORKSPACE_READY"
++        return entry
++
++    try:
++        executor.start()
++        code = executor.wait(timeout=1800)
++        if code == 0:
++            parser = Delft3DResultParser(builder.workspace_path)
++            meta = parser.parse()
++            entry["status"] = "COMPLETED"
++            entry["max_depth_m"] = meta.get("max_water_depth")
++            entry["outputs"] = meta.get("outputs", {})
++        else:
++            entry["status"] = "EXECUTION_FAILED"
++            entry["error"] = executor.error_message
++    except Exception as err:
++        entry["status"] = "EXECUTION_FAILED"
++        entry["error"] = str(err)
++    return entry
++
++
++# ---------------------------------------------------------------- main
++
++
++def process_dam(dam_id: str, scenarios: list, engines: list, execute_delft3d: bool) -> dict:
++    system = load_dam_system(dam_id)
++    dam = system["dam"]
++    lon, lat = float(dam["longitude"]), float(dam["latitude"])
++    epsg = utm_epsg_for_lon(lon)
++    bounds, dam_xy = domain_bounds_for(lon, lat, epsg)
++
++    dem_path = OUT_ROOT / dam_id / "inputs" / "dem.tif"
++    dem_source = "SYNTHETIC_VALLEY (schematic, prototype)"
++    if dam_id == "tehri" and REAL_TEHRI_DEM.exists():
++        if build_real_dem_clip(bounds, epsg, REAL_TEHRI_DEM, dem_path):
++            dem_source = "REAL Copernicus GLO-30 clip (reprojected to UTM)"
++    if not dem_path.exists():
++        dem = build_synthetic_dem(bounds, dam_xy, z0=300.0)
++        write_dem(dem, bounds, epsg, dem_path)
++
++    specs = build_specs(system, dem_path, epsg, bounds, dam_xy, dem_source)
++    dam_out = {
++        "dam_id": dam_id,
++        "dam_name": dam["dam_name"],
++        "river": dam.get("river_name"),
++        "state": dam.get("state"),
++        "dam_height_m": dam.get("dam_height_m"),
++        "gross_storage_bcm": dam.get("gross_storage_bcm"),
++        "utm_epsg": epsg,
++        "dem": {"path": str(dem_path), "source": dem_source, "resolution_m": DEM_RES},
++        "hydrology_static": latest_hydro_values(system["hydrology"]),
++        "scenarios": {},
++    }
++
++    for spec in specs:
++        if spec.scenario_type not in scenarios:
++            continue
++        run_dir = OUT_ROOT / dam_id / spec.scenario_type
++        run_dir.mkdir(parents=True, exist_ok=True)
++        scen_out = {"name": spec.name, "params": spec.params}
++
++        if "SPH3D" in engines:
++            logger.info(f"[{dam_id}/{spec.scenario_type}] running SPH 3D ...")
++            try:
++                scen_out["SPH3D"] = run_sph3d(spec, run_dir)
++            except Exception as err:
++                scen_out["SPH3D"] = {"engine": "SPH3D", "status": "FAILED", "error": str(err)}
++                logger.exception(f"SPH3D failed for {dam_id}/{spec.scenario_type}")
++
++        if "DELFT3D" in engines:
++            logger.info(f"[{dam_id}/{spec.scenario_type}] building Delft3D workspace ...")
++            try:
++                scen_out["DELFT3D"] = run_delft3d(
++                    spec, OUT_ROOT / "delft3d_workspaces", execute=execute_delft3d
++                )
++            except Exception as err:
++                scen_out["DELFT3D"] = {"engine": "DELFT3D", "status": "FAILED", "error": str(err)}
++                logger.exception(f"Delft3D failed for {dam_id}/{spec.scenario_type}")
++
++        (run_dir / "run_result.json").write_text(json.dumps(scen_out, indent=2, default=str))
++        dam_out["scenarios"][spec.scenario_type] = scen_out
++
++    return dam_out
++
++
++def write_report(summary: dict, path: Path) -> None:
++    lines = [
++        "# Dam Break Scenario Matrix — 5 Dams x 3 Scenarios",
++        "",
++        f"_Generated: {datetime.now(timezone.utc).isoformat()} — by `backend/run_dam_matrix.py`_",
++        "",
++        "| Dam | Scenario | SPH 3D | Max depth (m) | Flooded (km²) | Particles | Delft3D-FM |",
++        "|-----|----------|--------|---------------|---------------|-----------|------------|",
++    ]
++    status_icon = {
++        "COMPLETED": "✅ COMPLETED",
++        "WORKSPACE_READY_NO_BINARY": "🧱 workspace ready (no dflowfm binary)",
++        "WORKSPACE_READY": "🧱 workspace ready",
++        "FAILED": "❌ FAILED",
++        "EXECUTION_FAILED": "❌ EXEC FAILED",
++    }
++    for dam in summary["dams"]:
++        for scen in SCENARIOS:
++            s = dam["scenarios"].get(scen)
++            if not s:
++                continue
++            sph = s.get("SPH3D") or {}
++            d3d = s.get("DELFT3D") or {}
++            lines.append(
++                f"| {dam['dam_name']} | {scen} "
++                f"| {status_icon.get(sph.get('status'), sph.get('status', '—'))} "
++                f"| {sph.get('max_depth_m', '—')} | {sph.get('flooded_area_km2', '—')} "
++                f"| {sph.get('particle_count', '—')} "
++                f"| {status_icon.get(d3d.get('status'), d3d.get('status', '—'))} |"
++            )
++    lines += [
++        "",
++        "## Terrain sources",
++        "",
++        "| Dam | DEM |",
++        "|-----|-----|",
++    ]
++    for dam in summary["dams"]:
++        lines.append(f"| {dam['dam_name']} | {dam['dem']['source']} |")
++    lines += [
++        "",
++        "## Notes",
++        "",
++        "- **SPH 3D** runs are true 3D weakly-compressible SPH (Tait EOS, 3D cubic-spline",
++        "  kernel, 3D artificial viscosity, terrain collision) executed by the internal",
++        "  solver in `backend/app/engines/sph/`.",
++        "- **Delft3D-FM** entries with status `workspace ready` contain a complete D-Flow FM",
++        "  workspace (UGRID mesh `_net.nc`, `.mdu`, structure `.ini`, boundary `.pli/.bc/.ext`).",
++        "  They execute automatically once a `dflowfm` installation is present",
++        "  (`DELFT3D_INSTALL_DIR` in `backend/app/core/config.py`), or run the workspace",
++        "  manually with `dflowfm --autostartstop <mdu>`.",
++        "- Scenario physics: DAM_BREAK = full-breach failure of the dam wall;",
++        "  WATER_RELEASE = spillway gate opening (narrow release width) / Q(t) boundary in",
++        "  Delft3D; RIVER_BLOCKAGE = landslide blockage in the downstream gorge failing at",
++        "  t = failure_time (SPH) / dambreak structure timeseries (Delft3D).",
++        "- Prototype limits: SPH runs are capped at 8-15 s of simulated time and ~9k",
++        "  particles; heads are scaled to 15% of the real dam height (max 30 m) so the demo",
++        "  domain (1.4 km) stays meaningful. Real operational studies need larger domains,",
++        "  real bathymetry and no caps.",
++    ]
++    path.write_text("\n".join(lines))
++
++
++def main():
++    ap = argparse.ArgumentParser(description="5 dams x 3 scenarios x 2 engines matrix runner")
++    ap.add_argument("--dams", nargs="*", default=DAM_ORDER, choices=DAM_ORDER)
++    ap.add_argument("--scenarios", nargs="*", default=SCENARIOS, choices=SCENARIOS)
++    ap.add_argument("--engines", nargs="*", default=["SPH3D", "DELFT3D"], choices=["SPH3D", "DELFT3D"])
++    ap.add_argument("--no-delft3d-execute", action="store_true",
++                    help="Build Delft3D workspaces but never execute them")
++    args = ap.parse_args()
++
++    OUT_ROOT.mkdir(parents=True, exist_ok=True)
++    summary = {"generated_at": datetime.now(timezone.utc).isoformat(), "dams": []}
++
++    for dam_id in args.dams:
++        try:
++            summary["dams"].append(
++                process_dam(dam_id, args.scenarios, args.engines,
++                            execute_delft3d=not args.no_delft3d_execute)
++            )
++        except Exception:
++            logger.exception(f"Dam {dam_id} failed entirely")
++            summary["dams"].append({"dam_id": dam_id, "dam_name": dam_id,
++                                    "error": traceback.format_exc(limit=3), "scenarios": {}})
++
++    (OUT_ROOT / "matrix_summary.json").write_text(json.dumps(summary, indent=2, default=str))
++    write_report(summary, OUT_ROOT / "matrix_report.md")
++
++    # Console matrix
++    print("\n================ MATRIX SUMMARY ================")
++    for dam in summary["dams"]:
++        for scen, s in dam.get("scenarios", {}).items():
++            sph = s.get("SPH3D") or {}
++            d3d = s.get("DELFT3D") or {}
++            print(f"{dam['dam_name']:>20} | {scen:<15} | SPH3D: {sph.get('status', '—'):<10} "
++                  f"maxdepth={sph.get('max_depth_m', '—')}m area={sph.get('flooded_area_km2', '—')}km² "
++                  f"| Delft3D: {d3d.get('status', '—')}")
++    print(f"Report: {OUT_ROOT / 'matrix_report.md'}")
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/backend/tests/engines/sph/test_sph3d.py b/backend/tests/engines/sph/test_sph3d.py
+new file mode 100644
+index 0000000..cbfb324
+--- /dev/null
++++ b/backend/tests/engines/sph/test_sph3d.py
+@@ -0,0 +1,133 @@
++"""
++End-to-end test for the true 3D SPH (WCSPH) engine path.
++
++Verifies:
++  1. SPHEngine(use_3d=True) selects the SPH3DSolver and prepares 3D particles
++  2. The simulation runs to completion (terrain collision + Tait pressure + 3D viscosity)
++  3. Results are spatialized onto the 2D inundation grid (max depth / arrival time)
++  4. Particle mass is conserved during the run
++"""
++import os
++import numpy as np
++import rasterio
++from rasterio.transform import from_origin
++
++import shapely.geometry
++from geoalchemy2.shape import from_shape
++
++from app.engines.sph.engine import SPHEngine
++from app.engines.sph.solver import SPH3DSolver
++
++
++def create_valley_dem(filepath: str):
++    """V-shaped valley DEM: 200x200 cells of 2 m, sloping downstream (+y)."""
++    res = 2.0
++    transform = from_origin(0, 200 * res, res, res)
++
++    x = np.linspace(0, 400, 200)
++    y = np.linspace(0, 400, 200)
++    xx, yy = np.meshgrid(x, y)
++
++    # Valley floor along x=200, rising to the sides; gentle downstream slope
++    dem = np.abs(xx - 200) * 0.5 + yy * 0.1
++
++    with rasterio.open(
++        filepath, 'w',
++        driver='GTiff', height=200, width=200, count=1,
++        dtype=dem.dtype, crs='EPSG:4326', transform=transform, nodata=-9999.0
++    ) as dst:
++        dst.write(dem, 1)
++
++
++def make_context(dem_path: str):
++    class MockContext:
++        class MockScenario:
++            class ScenarioType:
++                value = "DAM_BREAK"
++            scenario_type = ScenarioType()
++            simulation_duration = 1.0  # hours; capped by duration_cap_s
++            parameters = {
++                "particle_spacing": 4.0,
++                "smoothing_length": 8.0,
++                "initial_water_level": 55.0,
++                "failure_time": 0.05,
++                "formation_time": 0.2,
++                "breach_width": 40.0,
++                "duration_cap_s": 0.6,
++            }
++        scenario = MockScenario()
++
++        class MockDataset:
++            def __init__(self, metadata):
++                self.metadata = metadata
++        dem = MockDataset({"file_path": dem_path})
++        hydrology = None
++
++        class MockGeom:
++            def __init__(self, x, y):
++                self.geometry = from_shape(shapely.geometry.Point(x, y))
++
++        class MockReservoir:
++            def __init__(self, minx, miny, maxx, maxy):
++                self.geometry = from_shape(shapely.geometry.box(minx, miny, maxx, maxy))
++
++        dam = MockGeom(200.0, 200.0)
++        river = MockGeom(200.0, 200.0)
++        reservoir = MockReservoir(180.0, 240.0, 220.0, 300.0)
++
++    return MockContext()
++
++
++def test_sph3d_engine_lifecycle(tmp_path):
++    dem_path = str(tmp_path / "valley3d.tif")
++    create_valley_dem(dem_path)
++
++    engine = SPHEngine(make_context(dem_path), use_3d=True)
++    assert engine.validate()
++
++    engine.prepare()
++    assert engine.status == "PREPARED", f"prepare failed: {engine.error_message}"
++    assert engine.use_3d is True
++    assert isinstance(engine.solver, SPH3DSolver)
++    assert engine.solver.dim == 3
++    assert engine.solver.state.pos.shape[1] == 3
++
++    n_before = engine.solver.state.num_particles
++    assert n_before > 0
++    mass_before = float(np.sum(engine.solver.state.mass[:n_before]))
++
++    engine.run()
++    assert engine.status == "COMPLETED", f"run failed: {engine.error_message}"
++
++    # Mass conservation (particles are neither created nor destroyed)
++    n_after = engine.solver.state.num_particles
++    mass_after = float(np.sum(engine.solver.state.mass[:n_after]))
++    assert n_after == n_before
++    assert abs(mass_after - mass_before) / mass_before < 1e-9
++
++    results = engine.load_results()
++    assert results["metadata"]["solver_dimensionality"] == 3
++    assert "3D" in results["metadata"]["sph_formulation"]
++
++    depth = np.array(
++        [[0.0 if v is None else v for v in row] for row in results["max_depth_array"]],
++        dtype=float,
++    )
++    # Water must have spread: some cells deeper than the 0.05 m inundation threshold
++    assert np.any(depth > 0.05), "3D run produced no inundation"
++    assert np.isfinite(depth).all()
++
++
++def test_sph3d_selected_via_scenario_parameter(tmp_path):
++    """{"dimensions": 3} in scenario parameters must also select the 3D solver."""
++    dem_path = str(tmp_path / "valley3d_b.tif")
++    create_valley_dem(dem_path)
++
++    ctx = make_context(dem_path)
++    ctx.MockScenario.parameters = dict(ctx.MockScenario.parameters, dimensions=3)
++
++    engine = SPHEngine(ctx)  # no explicit flag
++    assert engine.use_3d is True
++    engine.prepare()
++    assert engine.status == "PREPARED"
++    assert isinstance(engine.solver, SPH3DSolver)
+diff --git a/docs/simulation/delft3d.md b/docs/simulation/delft3d.md
+index c1a5069..1423ca7 100644
+--- a/docs/simulation/delft3d.md
++++ b/docs/simulation/delft3d.md
+@@ -1,16 +1,46 @@
+-# Delft3D Adapter
++# Delft3D-FM Adapter
+ 
+-The Phase 5 Delft3D adapter bridges the gap between the generalized Scenario Engine and standard Delft3D FM/FLOW installations.
++The Delft3D adapter (`backend/app/engines/delft3d/`) bridges the generalized Scenario
++Engine and Deltares **D-Flow FM** (unstructured flexible mesh, 2D depth-averaged,
++Kmx=0). It is *not* a re-implementation — it generates a complete, standards-compliant
++simulation workspace and executes the official solver as a subprocess.
+ 
+-## Requirements
+-- `DELFT3D_HOME` environment variable must point to the installation directory.
+-- `d3d_run.sh` must be executable.
++## Workspace produced per scenario
+ 
+-## Security
+-To prevent shell injection from dynamically generated project names, `subprocess.Popen` is strictly executed with array argument lists:
+-```python
+-subprocess.Popen([self.executable, self.mdf_path], ...)
++| Artifact | Generator | Content |
++|---|---|---|
++| `mesh/domain_net.nc` | `services/delft3d/mesh/generator.py` | UGRID 1.0 rectangular unstructured mesh (MeshKernel; `num_columns/num_rows` from bounds + `mesh_resolution`) |
++| `terrain/bathymetry.xyz` | `services/delft3d/terrain/sampler.py` | bed levels sampled from the project DEM |
++| `config/structures.ini` + `.pli` | `forcing/structure_generator.py` | DAM_BREAK: ST_DAMBREAK with Verheij–van der Knaap breach growth; RIVER_BLOCKAGE: breach-timeseries structure at the landslide location |
++| `boundary/*.pli/.bc`, `*.ext` | `forcing/boundaries.py`, `forcing/ext_generator.py` | WATER_RELEASE: Q(t) discharge boundary + downstream water-level boundary |
++| `scenario.mdu` | `builder.py` | D-Flow FM 1.2.x run file referencing all of the above |
++
++## Requirements & configuration (`backend/app/core/config.py`)
++
++- `DELFT3D_ENABLED=True`
++- `DELFT3D_EXECUTION_MODE="host"` → `DELFT3D_INSTALL_DIR` must contain
++  `bin/run_dflowfm.sh`; **or**
++- `DELFT3D_EXECUTION_MODE="docker"` → `DELFT3D_CONTAINER_IMAGE` must exist locally
++  (executed with the workspace bind-mounted at `/workspace`).
++
++## Behaviour without an installation
++
++Workspace building always works (mesh/MDU/forcing are pure Python). With no binary
++present, the matrix runner reports `WORKSPACE_READY_NO_BINARY` and the generated
++workspace can be executed anywhere D-Flow FM is installed:
++
++```bash
++dflowfm --autostartstop scenario.mdu
+ ```
+ 
+-## Fixtures
+-If the adapter detects Delft3D is not installed (e.g. in test CI environments), `validate()` will gracefully proceed, allowing `prepare()` to generate `.mdf` configs to disk, and `run()` to instantly complete, outputting a test fixture payload labeled `TEST FIXTURE`.
++## Security
++`subprocess.Popen` is invoked with array argument lists only (no shell interpolation),
++and every run is confined to its per-job workspace directory with a hard timeout
++(`DELFT3D_TIMEOUT_SECONDS`).
++
++## Results
++`parser.py` reads the `*_map.nc` NetCDF map output; `Delft3DGISExporter` converts it to
++GeoTIFF/GeoJSON footprints for the dashboard, and the Comparison service computes
++IoU/RMSE/MAE against the SPH results.
++
++See `docs/simulation/matrix.md` for the 5 dams × 3 scenarios matrix runner.
+diff --git a/docs/simulation/matrix.md b/docs/simulation/matrix.md
+new file mode 100644
+index 0000000..be21785
+--- /dev/null
++++ b/docs/simulation/matrix.md
+@@ -0,0 +1,150 @@
++# 5 Dams × 3 Scenarios Matrix — SPH 3D + Delft3D-FM
++
++This document describes how the two hydraulic engines are implemented and wired into the
++platform, and how the complete **5 dams × 3 scenarios × 2 engines** deliverable matrix is
++produced.
++
++```
++                 ┌───────────────────────────────────────────────────┐
++                 │  Government static fixtures (5 dam systems)       │
++                 │  data/fixtures/government/{dams,hydrology,...}    │
++                 └──────────────────────┬────────────────────────────┘
++                                        ▼
++                    per-dam terrain (UTM metres, 10 m grid)
++                    • Tehri: REAL Copernicus GLO-30 clip
++                    • others: synthetic schematic valley DEM
++                                        ▼
++        ┌───────────────────────┬───────────────────────────┐
++        ▼                       ▼                           ▼
++   DAM_BREAK              WATER_RELEASE               RIVER_BLOCKAGE
++   (dam wall fails,       (spillway gates open a      (landslide blockage in
++    breach erosion)        narrow release width)       gorge fails at t_f)
++        └───────────┬───────────┴───────────┬───────────┘
++                    ▼                       ▼
++          SPH 3D (internal)        Delft3D-FM (adapter)
++          true 3D WCSPH            UGRID mesh + MDU + structures
++          Tait EOS, 3D kernel      + boundary forcing (.pli/.bc/.ext)
++                    └───────────┬───────────┘
++                                ▼
++        common outputs: max depth raster, inundation GeoJSON,
++        metrics JSON, matrix_report.md / matrix_summary.json
++```
++
++## 1. SPH 3D — how it is implemented
++
++Everything lives in `backend/app/engines/sph/` (pure NumPy/SciPy, no external solver):
++
++| Piece | File | 3D support |
++|---|---|---|
++| Particle state | `particle.py` | N×3 position/velocity/acceleration arrays |
++| Kernel | `kernel.py` | 3D cubic-spline normalisation `1/(π h³)` |
++| Neighbours | `neighborhood.py` | `cKDTree` in 3D, symmetric pair lists |
++| Physics | `physics.py` → `Physics3DSolver` | Tait EOS (`γ=7`), 3D pressure gradient, Monaghan artificial viscosity with 3D sound speed |
++| Terrain | `boundary.py` → `TerrainHandler` | bilinear bed elevation; per-step collision penalty pushes particles out of the bed |
++| Boundaries | `boundary.py` → `BoundaryHandler` | 6-element bounds `[xmin,xmax,ymin,ymax,zmin,zmax]`; dynamic breach walls; blockage AABBs |
++| Time integration | `integrator.py` | CFL + force-limited adaptive `dt`, semi-implicit Euler, 30 m/s physical velocity cap |
++| Results | `writer.py` + `spatialization.py` | 3D particle cloud → per-cell max free-surface − bed = max depth grid, arrival time, GeoJSON footprint |
++
++**Engine selection** (`app/api/endpoints/jobs.py`):
++
++- `engine: "SPH"` or `"SPH2D"` → 2D depth-averaged SWE-SPH
++- `engine: "SPH3D"` → `SPHEngine(context, use_3d=True)` → `SPH3DSolver`
++- Scenario parameter `{"dimensions": 3}` also selects the 3D solver.
++
++The Scenario Builder dropdown in the dashboard exposes all three engines.
++
++**Performance notes** (pure-NumPy prototype):
++
++- Kernel ratio `h ≈ 1.3 × particle_spacing` (standard for cubic splines; larger ratios
++  explode the neighbour count in 3D).
++- Pair scatter uses `np.bincount` instead of `np.add.at` (identical maths, ~5× faster).
++- Budget ≈ 9 000 particles, 8–15 s of simulated time per run on the 1.4 km demo domain.
++
++## 2. Delft3D-FM — how it is implemented
++
++The adapter in `backend/app/engines/delft3d/` builds a **complete, executable D-Flow FM
++workspace** for every scenario:
++
++- `builder.py` — orchestrates the workspace:
++  - `services/delft3d/mesh/generator.py` → UGRID `_net.nc` via **MeshKernel**
++    (rectangular unstructured grid; `num_columns/num_rows` derived from bounds+resolution)
++  - `services/delft3d/terrain/sampler.py` → `bathymetry.xyz` sampled from the DEM
++  - `services/delft3d/forcing/structure_generator.py` → `structures.ini` + `.pli`
++    (ST_DAMBREAK, Verheij–van der Knaap breach growth for DAM_BREAK; breach-timeseries
++    structure for RIVER_BLOCKAGE)
++  - `services/delft3d/forcing/boundaries.py` + `ext_generator.py` → discharge/water-level
++    `.bc` time series registered in the `.ext` forcing file (WATER_RELEASE)
++  - `scenario.mdu` matching D-Flow FM 1.2.x
++- `executor.py` — runs `dflowfm` as a subprocess (host install or Docker image).
++- `parser.py` — reads the `*_map.nc` NetCDF output back into the common result format.
++
++**Physical model**: 2D depth-averaged shallow water (Kmx=0). D-Flow FM is the
++industry-standard complement to the particle-based SPH prototype — the Comparison tab
++can quantify IoU/RMSE/MAE between the two footprints.
++
++### Executing Delft3D for real
++
++The builder always runs; execution requires the Deltares binary:
++
++1. Install D-Flow FM (source build or the `delft3d:dflowfm` Docker image).
++2. Set in `backend/app/core/config.py` / `.env`:
++   - `DELFT3D_INSTALL_DIR=/path/to/install` (host mode) **or**
++   - `DELFT3D_EXECUTION_MODE=docker` + `DELFT3D_CONTAINER_IMAGE=...`
++3. Re-run the matrix — runs flip from `WORKSPACE_READY_NO_BINARY` to `COMPLETED`,
++   and NetCDF results are parsed automatically.
++
++Manual execution of any generated workspace also works:
++
++```bash
++cd data/matrix_results/delft3d_workspaces/job_tehri_dam_break
++dflowfm --autostartstop scenario.mdu
++```
++
++## 3. The matrix runner
++
++```bash
++# full matrix (≈25–35 min: 15 SPH 3D runs + 15 Delft3D workspace builds)
++.venv/bin/python backend/run_dam_matrix.py
++
++# subsets
++.venv/bin/python backend/run_dam_matrix.py --dams tehri bhakra
++.venv/bin/python backend/run_dam_matrix.py --scenarios DAM_BREAK --engines SPH3D
++```
++
++| Dam | River | State | Terrain |
++|---|---|---|---|
++| Bhakra | Sutlej | Himachal Pradesh | synthetic valley |
++| Tehri | Bhagirathi | Uttarakhand | **real** Copernicus GLO-30 clip |
++| Hirakud | Mahanadi | Odisha | synthetic valley |
++| Sardar Sarovar | Narmada | Gujarat | synthetic valley |
++| Mettur | Cauvery | Tamil Nadu | synthetic valley |
++
++Scenario parameters are derived per dam from the static government fixtures
++(`data/fixtures/government/`): dam height → prototype head (15% of height, capped at 30 m) and
++USBR-style breach width (3x height, capped at 140 m), hydrology fixture →
++release/inflow discharges.
++
++### Outputs (`data/matrix_results/`)
++
++```
++{dam}/inputs/dem.tif                     terrain used (UTM, 10 m)
++{dam}/{scenario}/run_result.json         parameters + both engine results
++{dam}/{scenario}/sph3d_result.json       (inside run_result.json under "SPH3D")
++{dam}/{scenario}/sph3d_max_depth.tif     max-depth raster (UTM)
++{dam}/{scenario}/sph3d_inundation.geojson  footprint (WGS84, ready for the dashboard)
++delft3d_workspaces/job_{dam}_{scenario}/ full D-Flow FM workspace
++matrix_summary.json                      machine-readable matrix
++matrix_report.md                         human-readable 5×3 report
++```
++
++## 4. Honest limitations
++
++- SPH runs are a **prototype scale**: 1.4 km domain, ~9 k particles, ≤15 s of simulated
++  time, heads scaled to 15% of real dam height (max 30 m). Real dam-break studies need km-scale domains, real
++  bathymetry, dual-GPU DualSPHysics or similar, and hours of simulated time.
++- Synthetic DEMs are schematic V-valleys — only Tehri uses real terrain. Drop real DEM
++  GeoTIFFs into `{dam}/inputs/dem.tif` (or attach them as project datasets in the
++  dashboard) to upgrade any dam.
++- The dam **GLB model** (`dam_this_is_crazy.glb`) is a visualization asset anchored via
++  `Dam3DAsset` metadata in the 3D viewer; it deliberately does not feed the solvers
++  (non-watertight decorative meshes) — hydraulic geometry comes from DEM + fixtures.
+diff --git a/docs/simulation/sph.md b/docs/simulation/sph.md
+index d28a1d8..c14b7ee 100644
+--- a/docs/simulation/sph.md
++++ b/docs/simulation/sph.md
+@@ -1,13 +1,37 @@
+ # SPH Numerical Prototype
+ 
+-The Phase 4 SPH solver utilizes smooth particle hydrodynamics for fast, flexible shallow-water/dam-break approximations.
++The SPH engine (`backend/app/engines/sph/`) is an internal, pure NumPy/SciPy smooth
++particle hydrodynamics solver used for fast, flexible dam-break approximations.
+ 
+-## Formulation
+-- **Integration**: Semi-implicit Euler for stable velocity/position updates.
+-- **Kernel**: Cubic Spline kernel (`alpha * (1 - 1.5q^2 + 0.75q^3)`).
+-- **Neighbor Search**: Implemented via `scipy.spatial.cKDTree` providing `O(N log N)` lookup, significantly avoiding naive `O(N^2)` interactions.
+-- **Pressure**: Tait's equation of state `P = B * ((rho / rho_0)^7 - 1)`.
++## Two formulations
++
++- **2D SWE-SPH** (`engine: "SPH"` / `"SPH2D"`): depth-averaged shallow-water SPH with
++  bed-slope source terms from the DEM.
++- **3D WCSPH** (`engine: "SPH3D"` or scenario parameter `{"dimensions": 3}`):
++  weakly-compressible SPH with full 3D particle state.
++
++## Formulation (3D)
++- **Integration**: Semi-implicit Euler with adaptive `dt` from CFL + force limits.
++- **Kernel**: Cubic spline, 3D normalisation `1/(π h³)`; recommended `h ≈ 1.3 × spacing`.
++- **Neighbour search**: `scipy.spatial.cKDTree`, symmetric pair lists.
++- **Pressure**: Tait equation of state `P = B ((ρ/ρ₀)^7 − 1)`.
++- **Viscosity**: Monaghan artificial viscosity with 3D sound speed `c = √(γB/ρ₀)`.
++- **Terrain**: bilinear DEM sampling; per-step collision penalty keeps particles
++  above the bed; bed elevation tracked per particle for depth spatialisation.
++- **Boundaries**: 6-element domain bounds, dynamic breach walls (progressive opening),
++  blockage AABBs (river blockage scenario), 30 m/s physical velocity cap.
++- **Outputs**: particle cloud → regular grid (max depth, velocity, arrival time) →
++  GeoJSON inundation footprint + metrics consumed by the Inundation/Comparison services.
++
++## Performance
++- Pair scatter uses `np.bincount` (buffered) rather than `np.add.at` (~5× faster).
++- Prototype budget: ≈9 000 particles, 8–15 s simulated time on a 1.4 km domain
++  (~100 ms/step single-core). For production scale, port the same kernels to
++  DualSPHysics (GPU) behind the existing engine interface.
+ 
+ ## Limitations
+-This engine is a research prototype prioritizing architecture validation over multi-million particle simulations. 
+-Currently it handles bounding-box reflections and calculates basic pressure forces without complex viscosity tensors.
++Research prototype prioritising architecture validation over multi-million-particle
++runs; mass-conservation diagnostics are simplified; free surface is implicit
++(density-based) rather than tracked explicitly.
++
++See `docs/simulation/matrix.md` for the 5 dams × 3 scenarios matrix runner.
+diff --git a/frontend/package.json b/frontend/package.json
+index 09a5e5f..b213147 100644
+--- a/frontend/package.json
++++ b/frontend/package.json
+@@ -21,7 +21,7 @@
+     "axios": "^1.20.0",
+     "deck.gl": "^9.4.0",
+     "leaflet": "^1.9.4",
+-    "leaflet-draw": "^0.4.14",
++    "leaflet-draw": "^1.0.4",
+     "lucide-react": "^1.46.0",
+     "maplibre-gl": "^6.9.1",
+     "react": "^19.2.8",
+diff --git a/frontend/src/api.ts b/frontend/src/api.ts
+index 260744e..809f1fd 100644
+--- a/frontend/src/api.ts
++++ b/frontend/src/api.ts
+@@ -1,7 +1,33 @@
+ import axios from 'axios';
+ 
++/**
++ * Resolves the backend origin:
++ *  1. VITE_API_ORIGIN env override (set in .env / .env.production)
++ *  2. Proxied preview environments (host pattern "{port}-{sandbox}.e2b.app")
++ *     -> swap the port label to the backend port 8000
++ *  3. Local development -> http://localhost:8000
++ */
++function resolveApiOrigin(): string {
++  const explicit = import.meta.env.VITE_API_ORIGIN;
++  if (explicit) return explicit;
++
++  if (typeof window !== 'undefined') {
++    const host = window.location.hostname;
++    const proxyMatch = host.match(/^(\d+)-(.+)$/);
++    if (proxyMatch && proxyMatch[1] !== '8000') {
++      return `${window.location.protocol}//8000-${proxyMatch[2]}`;
++    }
++    if (proxyMatch && proxyMatch[1] === '8000') {
++      return `${window.location.protocol}//${host}`;
++    }
++  }
++  return 'http://localhost:8000';
++}
++
++export const API_ORIGIN = resolveApiOrigin();
++
+ const api = axios.create({
+-  baseURL: 'http://localhost:8000/api/v1',
++  baseURL: `${API_ORIGIN}/api/v1`,
+   headers: {
+     'Content-Type': 'application/json'
+   }
+diff --git a/frontend/src/components/AssetAlignment.tsx b/frontend/src/components/AssetAlignment.tsx
+index 0ba67fa..6a67a02 100644
+--- a/frontend/src/components/AssetAlignment.tsx
++++ b/frontend/src/components/AssetAlignment.tsx
+@@ -6,7 +6,7 @@ import Map from 'react-map-gl/maplibre';
+ import * as maplibregl from 'maplibre-gl';
+ import 'maplibre-gl/dist/maplibre-gl.css';
+ import { useProject } from '../context/ProjectContext';
+-import api from '../api';
++import api, { API_ORIGIN } from '../api';
+ import { Map as MapIcon, Upload, Save } from 'lucide-react';
+ 
+ const MAP_STYLE = {
+@@ -138,7 +138,7 @@ const AssetAlignment = () => {
+           scale: [scaleX, scaleY, scaleZ]
+         }],
+         pickable: true,
+-        scenegraph: `http://localhost:8000/${asset.file_path}`,
++        scenegraph: `${API_ORIGIN}/${asset.file_path}`,
+         loaders: [GLTFLoader],
+         getPosition: (d: any) => d.position,
+         getOrientation: (d: any) => d.orientation,
+diff --git a/frontend/src/components/Map3DViewer.tsx b/frontend/src/components/Map3DViewer.tsx
+index 103dec4..c2a84da 100644
+--- a/frontend/src/components/Map3DViewer.tsx
++++ b/frontend/src/components/Map3DViewer.tsx
+@@ -7,7 +7,7 @@ import Map from 'react-map-gl/maplibre';
+ import * as maplibregl from 'maplibre-gl';
+ import 'maplibre-gl/dist/maplibre-gl.css';
+ import { useProject } from '../context/ProjectContext';
+-import api from '../api';
++import api, { API_ORIGIN } from '../api';
+ import { Map as MapIcon, Play, Pause, Activity, RotateCcw, Layers } from 'lucide-react';
+ 
+ type BasemapStyle = 'dark' | 'satellite' | 'street' | 'voyager';
+@@ -107,7 +107,7 @@ const Map3DViewer: React.FC = () => {
+           scale: [asset.scale_x, asset.scale_y, asset.scale_z]
+         }],
+         pickable: true,
+-        scenegraph: `http://localhost:8000/${asset.file_path}`,
++        scenegraph: `${API_ORIGIN}/${asset.file_path}`,
+         loaders: [GLTFLoader],
+         getPosition: (d: any) => d.position,
+         getOrientation: (d: any) => d.orientation,
+diff --git a/frontend/src/components/ScenarioBuilder.tsx b/frontend/src/components/ScenarioBuilder.tsx
+index 904e21d..a3efb58 100644
+--- a/frontend/src/components/ScenarioBuilder.tsx
++++ b/frontend/src/components/ScenarioBuilder.tsx
+@@ -235,7 +235,8 @@ const ScenarioBuilder: React.FC = () => {
+           <div className="form-group">
+             <label className="form-label">Solver Engine</label>
+             <select className="form-select" value={engine} onChange={e => setEngine(e.target.value)}>
+-              <option value="SPH">SPH (Smooth Particle Hydrodynamics)</option>
++              <option value="SPH">SPH 2D (Depth-Averaged SWE)</option>
++              <option value="SPH3D">SPH 3D (Particle-Based, True 3D)</option>
+               <option value="DELFT3D">Delft3D Flexible Mesh</option>
+             </select>
+           </div>
