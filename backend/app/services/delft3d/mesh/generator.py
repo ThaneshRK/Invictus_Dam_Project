@@ -56,6 +56,11 @@ class Delft3DMeshGenerator:
             block_size_x=resolution,
             block_size_y=resolution
         )
+        # MeshKernel >= 8 derives the grid from num_columns/num_rows (defaults are
+        # 3x3 and upper_right is NOT used by mesh2d_make_rectangular_mesh), so we
+        # compute the counts explicitly from the bounds and requested resolution.
+        make_grid_parameters.num_columns = max(1, int(round((xmax - xmin) / resolution)))
+        make_grid_parameters.num_rows = max(1, int(round((ymax - ymin) / resolution)))
 
         # Compute the regular unstructured Mesh2D
         mk.mesh2d_make_rectangular_mesh(make_grid_parameters)

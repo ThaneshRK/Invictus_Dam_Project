@@ -32,3 +32,9 @@ Thumbs.db
 
 # Large datasets
 datasets/
+
+# Generated 5x3 matrix outputs (heavy rasters/workspaces).
+# Regenerate with: .venv/bin/python backend/run_dam_matrix.py
+# (matrix_report.md and matrix_summary.json stay tracked)
+data/matrix_results/*/
+data/matrix_results_run.log

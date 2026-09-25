@@ -17,8 +17,12 @@ class SPHEngine(SimulationEngine):
     """
     SPH Simulation Engine Implementation.
     Orchestrates the modular solver, inputs, and outputs.
+
+    Dimensionality:
+      - 2D depth-averaged SWE-SPH (default, engine="SPH")
+      - 3D weakly-compressible SPH (engine="SPH3D" or scenario parameter {"dimensions": 3})
     """
-    def __init__(self, context: Any):
+    def __init__(self, context: Any, use_3d: bool = False):
         super().__init__(context)
         self.solver = None
         self.writer = None
@@ -33,6 +37,13 @@ class SPHEngine(SimulationEngine):
         st = self.context.scenario.scenario_type
         self.scenario_type = st.value if hasattr(st, 'value') else str(st)
         self.is_benchmark = False # Benchmarks should use a different testing engine path now
+        
+        params = getattr(self.context.scenario, "parameters", None) or {}
+        try:
+            requested_dims = int(params.get("dimensions", 2))
+        except (TypeError, ValueError):
+            requested_dims = 2
+        self.use_3d = bool(use_3d) or requested_dims == 3
         
         self.diagnostics = {}
 
@@ -87,8 +98,12 @@ class SPHEngine(SimulationEngine):
         particle_spacing = inputs["particle_spacing"]
         h = inputs["smoothing_length"]
         
-        # Determine 2D vs 3D based on context engine choice if needed, but default 2D
-        self.solver = SPH2DSolver(max_particles=self.max_particles, h=h)
+        # Solver dimensionality: 2D SWE-SPH (default) or true 3D WCSPH
+        if self.use_3d:
+            logger.info("SPH Engine: initializing 3D WCSPH solver.")
+            self.solver = SPH3DSolver(max_particles=self.max_particles, h=h)
+        else:
+            self.solver = SPH2DSolver(max_particles=self.max_particles, h=h)
         
         try:
             self.solver.init_real_scenario(
@@ -108,7 +123,10 @@ class SPHEngine(SimulationEngine):
         self.writer = ResultWriter(bounds=self.domain_bounds, resolution=particle_spacing)
         
         duration_s = inputs["duration_s"]
-        duration_s = min(duration_s, 5.0) # testing cap
+        # Prototype safety cap (seconds of simulated time). Overridable per-scenario
+        # via the "duration_cap_s" parameter; default keeps the historical 5 s cap.
+        duration_cap_s = float(inputs.get("duration_cap_s", 5.0))
+        duration_s = min(duration_s, duration_cap_s)
         
         self.total_steps = int(duration_s / self.solver.integrator.max_dt)
         self.duration_s = duration_s
@@ -188,7 +206,8 @@ class SPHEngine(SimulationEngine):
         res = self.writer.get_final_results()
         # Attach scientific output metadata
         res["metadata"] = {
-            "sph_formulation": "2D SWE-SPH",
+            "sph_formulation": "3D WCSPH (Tait EOS)" if self.use_3d else "2D SWE-SPH",
+            "solver_dimensionality": 3 if self.use_3d else 2,
             "solver_version": "2.0 (Vectorized)",
             "particle_count": self.solver.state.num_particles if self.solver else 0,
             "crs": res.get("crs"),

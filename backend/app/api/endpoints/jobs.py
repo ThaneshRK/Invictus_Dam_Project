@@ -64,13 +64,15 @@ async def run_simulation_task(job_id: uuid.UUID):
         
         engine_name = job.engine.upper()
         
-        if engine_name == "SPH":
+        if engine_name in ("SPH", "SPH2D"):
             engine = SPHEngine(context)
+        elif engine_name == "SPH3D":
+            engine = SPHEngine(context, use_3d=True)
         elif engine_name == "DELFT3D":
             engine = Delft3DEngine(context)
         else:
             job.status = JobStatus.PREPARATION_FAILED
-            job.error = f"Unknown Engine: {job.engine}"
+            job.error = f"Unknown Engine: {job.engine}. Valid engines: SPH, SPH2D, SPH3D, DELFT3D"
             await db.commit()
             return
 

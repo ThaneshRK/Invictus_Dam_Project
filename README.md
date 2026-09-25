@@ -6,7 +6,24 @@ This repository contains the complete end-to-end framework for modeling dam brea
 1. **FastAPI Backend**: Python 3.11 API for geometry validation, physics orchestration, and data transformation.
 2. **React Dashboard**: React/Vite web interface with Leaflet integration.
 3. **PostgreSQL/PostGIS**: Spatial relational database.
-4. **Physics Engines**: Custom SPH prototype and Delft3D adapter.
+4. **Physics Engines**:
+   - **SPH 2D / SPH 3D** — internal NumPy/SciPy smooth-particle-hydrodynamics solvers
+     (depth-averaged SWE-SPH and true 3D weakly-compressible SPH).
+   - **Delft3D-FM adapter** — generates complete D-Flow FM workspaces (UGRID mesh, MDU,
+     structures, boundary forcing) and executes the official solver when installed.
+
+## 5 Dams x 3 Scenarios Matrix
+The complete deliverable matrix (Bhakra, Tehri, Hirakud, Sardar Sarovar, Mettur x
+DAM_BREAK / WATER_RELEASE / RIVER_BLOCKAGE x SPH 3D + Delft3D-FM) runs with one command:
+
+```bash
+.venv/bin/python backend/run_dam_matrix.py
+```
+
+It writes per-run results (max-depth rasters, inundation GeoJSON, metrics), ready-to-run
+Delft3D workspaces, and a `data/matrix_results/matrix_report.md` summary. See
+`docs/simulation/matrix.md` for the full approach and how to enable real `dflowfm`
+execution.
 
 ---
 

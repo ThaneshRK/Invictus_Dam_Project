@@ -147,20 +147,22 @@ class Physics3DSolver(PhysicsSolver):
         N = state.num_particles
         fluid_idx = state.get_fluid_indices()
         
-        state.rho[:N] = 0.0
-        
+        # Density summation via bincount (buffered scatter — mathematically identical
+        # to np.add.at but 10-50x faster for large pair lists)
         if len(i) > 0:
             pos_i = state.pos[i]
             pos_j = state.pos[j]
             mass_j = state.mass[j]
             
             r_vec = pos_i - pos_j
-            r = np.linalg.norm(r_vec, axis=1)
+            r = np.sqrt(np.einsum('ij,ij->i', r_vec, r_vec))
             
             W_r = self.kernel.W(r)
             rho_contrib = mass_j * W_r
-            np.add.at(state.rho, i, rho_contrib)
-            
+            state.rho[:N] = np.bincount(i, weights=rho_contrib, minlength=N)[:N]
+        else:
+            state.rho[:N] = 0.0
+        
         W_0 = self.kernel.W(0.0)
         if isinstance(W_0, np.ndarray):
             W_0 = W_0[0]
@@ -184,20 +186,15 @@ class Physics3DSolver(PhysicsSolver):
         
         if len(i) > 0:
             h = self.kernel.h
-            mask = i != j
-            i_m = i[mask]
-            j_m = j[mask]
+            # query_pairs() only yields distinct pairs within the 2h support radius,
+            # so no self-pair / out-of-support masking is needed here.
+            i_m = i
+            j_m = j
             
             pos_i = state.pos[i_m]
             pos_j = state.pos[j_m]
             r_vec = pos_i - pos_j
-            r = np.linalg.norm(r_vec, axis=1)
-            
-            mask_r = (r > 0) & (r <= 2 * h)
-            i_m = i_m[mask_r]
-            j_m = j_m[mask_r]
-            r_vec = r_vec[mask_r]
-            r = r[mask_r]
+            r = np.sqrt(np.einsum('ij,ij->i', r_vec, r_vec))
             
             if len(i_m) > 0:
                 rho_i = state.rho[i_m]
@@ -213,7 +210,7 @@ class Physics3DSolver(PhysicsSolver):
                 pressure_term = (p_i / (rho_i**2)) + (p_j / (rho_j**2))
                 
                 pi_ij = np.zeros(len(i_m), dtype=np.float64)
-                v_dot_r = np.sum(v_vec * r_vec, axis=1)
+                v_dot_r = np.einsum('ij,ij->i', v_vec, r_vec)
                 visc_mask = v_dot_r < 0
                 
                 if np.any(visc_mask):
@@ -233,6 +230,8 @@ class Physics3DSolver(PhysicsSolver):
                 
                 acc_contrib = -mass_j[:, np.newaxis] * total_term[:, np.newaxis] * grad_W
                 
-                np.add.at(state.acc[:, 0], i_m, acc_contrib[:, 0])
-                np.add.at(state.acc[:, 1], i_m, acc_contrib[:, 1])
-                np.add.at(state.acc[:, 2], i_m, acc_contrib[:, 2])
+                # Buffered scatter (identical accumulation, far faster than np.add.at)
+                for k in range(3):
+                    state.acc[:N, k] += np.bincount(
+                        i_m, weights=acc_contrib[:, k], minlength=N
+                    )

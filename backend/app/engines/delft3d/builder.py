@@ -39,9 +39,8 @@ class Delft3DModelBuilder:
         self.bounds = [0.0, 0.0, 1000.0, 1000.0]
         dem_path = None
         if self.context.dem:
-            dem_path = getattr(self.context.dem, "file_path", None)
-            if not dem_path and getattr(self.context.dem, "metadata_", None) and isinstance(self.context.dem.metadata_, dict):
-                dem_path = self.context.dem.metadata_.get("file_path")
+            from app.engines.utils import resolve_dataset_path
+            dem_path = resolve_dataset_path(self.context.dem)
 
         if dem_path and os.path.exists(dem_path):
             with rasterio.open(dem_path) as src:
@@ -99,9 +98,8 @@ class Delft3DModelBuilder:
         """Samples DEM and generates .xyz bathymetry file. Returns relative path or empty string."""
         dem_file_path = None
         if self.context.dem:
-            dem_file_path = getattr(self.context.dem, "file_path", None)
-            if not dem_file_path and getattr(self.context.dem, "metadata_", None) and isinstance(self.context.dem.metadata_, dict):
-                dem_file_path = self.context.dem.metadata_.get("file_path")
+            from app.engines.utils import resolve_dataset_path
+            dem_file_path = resolve_dataset_path(self.context.dem)
 
         if dem_file_path and os.path.exists(dem_file_path):
             ts = Delft3DTerrainSampler(self.workspace_path)

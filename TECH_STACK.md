@@ -39,7 +39,7 @@ The framework is built as a microservice-ready, containerized application design
 | **Language** | [TypeScript](https://www.typescriptlang.org/) | `~6.0.2` | Type-safe front-end development |
 | **Build Tooling** | [Vite](https://vitejs.dev/) | `^8.3.0` | Ultra-fast module bundler & dev server |
 | **Spatial Maps** | [Leaflet](https://leafletjs.com/) & [React-Leaflet](https://react-leaflet.js.org/) | `^1.9.4` / `^5.0.0` | Interactive 2D map views & layer rendering |
-| **Map Drawing** | [Leaflet-Draw](https://github.com/Leaflet/Leaflet.draw) | `^0.4.14` | ROI and bounding box drawing tools |
+| **Map Drawing** | [Leaflet-Draw](https://github.com/Leaflet/Leaflet.draw) | `^1.0.4` | ROI and bounding box drawing tools |
 | **3D & Layer Visualization** | [Deck.gl](https://deck.gl/) | `^9.4.0` | High-performance WebGL geospatial data rendering |
 | **Vector Tiles & Basemaps** | [MapLibre GL](https://maplibre.org/) | `^6.9.1` | MapLibre vector map rendering |
 | **Charts & Analytics** | [Recharts](https://recharts.org/) | `^3.10.1` | Hydrographs, depth distributions, and comparison charts |

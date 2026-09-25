@@ -1,5 +1,19 @@
 # Code Audit Report
 
+> **STATUS UPDATE (2026-09-25)** — several gaps below have since been closed; this
+> audit is kept for historical reference:
+> - **SPH 3D**: implemented and wired (`SPH3DSolver` selected via engine `SPH3D` or
+>   `{"dimensions": 3}`; true 3D WCSPH with Tait EOS, 3D kernel/viscosity, terrain
+>   collision). See `docs/simulation/matrix.md`.
+> - **Delft3D**: full workspace builder verified (UGRID mesh via MeshKernel with
+>   correct `num_columns/num_rows`, MDU, structures, `.pli/.bc/.ext` forcing);
+>   executes when a `dflowfm` binary is configured.
+> - **5 dams x 3 scenarios matrix**: `backend/run_dam_matrix.py` runs all 15
+>   combinations (SPH 3D executes; Delft3D workspaces build and are ready to run),
+>   writing results + `data/matrix_results/matrix_report.md`.
+> - **GLB 3D viewer**: implemented (`ScenegraphLayer` + `Dam3DAsset` anchoring +
+>   Asset Alignment UI).
+
 ## Summary
 The current repository provides the skeletal structure of a flash-flood / dam-break HADR simulation framework but relies heavily on mock data, stubs, and partial implementations. The React frontend is well-structured but populated with placeholders and simulated API responses. On the backend, a custom Python-based SPH solver exists, but the intended DualSPHysics integration is missing entirely. The Delft3D-FM executor exists but lacks any actual `.mdu` configuration files to run. The Google Earth Engine (GEE) integration contains genuine Earth Engine code but immediately falls back to mock fixtures when credentials are unsupplied. While some real shapefiles (Dam, Reservoir, Rivers) exist in the `datasets/` folder, the codebase does not dynamically run simulations across all planned dams, and the final 5x3 matrix of deliverables is mostly untouched. 
 

@@ -6,7 +6,7 @@ import Map from 'react-map-gl/maplibre';
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useProject } from '../context/ProjectContext';
-import api from '../api';
+import api, { API_ORIGIN } from '../api';
 import { Map as MapIcon, Upload, Save } from 'lucide-react';
 
 const MAP_STYLE = {
@@ -138,7 +138,7 @@ const AssetAlignment = () => {
           scale: [scaleX, scaleY, scaleZ]
         }],
         pickable: true,
-        scenegraph: `http://localhost:8000/${asset.file_path}`,
+        scenegraph: `${API_ORIGIN}/${asset.file_path}`,
         loaders: [GLTFLoader],
         getPosition: (d: any) => d.position,
         getOrientation: (d: any) => d.orientation,

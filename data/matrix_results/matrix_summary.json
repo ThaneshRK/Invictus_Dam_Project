@@ -1,0 +1,1325 @@
+{
+  "generated_at": "2026-09-25T16:04:44.351925+00:00",
+  "dams": [
+    {
+      "dam_id": "bhakra",
+      "dam_name": "Bhakra Dam",
+      "river": "Sutlej",
+      "state": "Himachal Pradesh",
+      "dam_height_m": 225.55,
+      "gross_storage_bcm": 9.621,
+      "utm_epsg": 32643,
+      "dem": {
+        "path": "/home/user/Invictus_Dam_Project/data/matrix_results/bhakra/inputs/dem.tif",
+        "source": "SYNTHETIC_VALLEY (schematic, prototype)",
+        "resolution_m": 10.0
+      },
+      "hydrology_static": {
+        "water_level": 1642.2,
+        "inflow": 17628.0,
+        "outflow": 27613.0
+      },
+      "scenarios": {
+        "DAM_BREAK": {
+          "name": "Bhakra Dam - Catastrophic Dam Break",
+          "params": {
+            "dimensions": 3,
+            "initial_water_level": 331.2399505615234,
+            "breach_width": 140.0,
+            "failure_time": 2.0,
+            "formation_time": 6.0,
+            "particle_spacing": 10.0,
+            "smoothing_length": 13.0,
+            "duration_cap_s": 10.0,
+            "mesh_resolution": 25.0,
+            "breach_elevation": 333.2399505615234,
+            "crest_level_min": 299.2399505615234,
+            "breach_formation_time": 1.0
+          },
+          "SPH3D": {
+            "engine": "SPH3D",
+            "status": "COMPLETED",
+            "error": null,
+            "particle_count": 4582,
+            "simulated_time_s": 10.01,
+            "wall_time_s": 73.56,
+            "max_depth_m": 24.74,
+            "mean_depth_flooded_m": 12.36,
+            "flooded_area_km2": 0.27,
+            "grid_resolution_m": 10.0,
+            "initial_water_level_m": 331.24,
+            "diagnostics": {
+              "max_velocity": 20.63343901206279,
+              "relative_volume_error": 0.0
+            },
+            "metadata": {
+              "sph_formulation": "3D WCSPH (Tait EOS)",
+              "solver_dimensionality": 3,
+              "solver_version": "2.0 (Vectorized)",
+              "particle_count": 4582,
+              "crs": "EPSG:4326",
+              "bounds": [
+                635547.0913757568,
+                636947.0913757568,
+                3475385.135174003,
+                3476785.135174003
+              ],
+              "conservation_diagnostics": {
+                "max_velocity": 20.63343901206279,
+                "relative_volume_error": 0.0
+              }
+            }
+          },
+          "DELFT3D": {
+            "engine": "DELFT3D",
+            "status": "WORKSPACE_READY_NO_BINARY",
+            "error": "dflowfm binary not installed on this machine \u2014 full D-Flow FM workspace (mesh/MDU/structures/forcing) generated and ready to execute.",
+            "workspace": "/home/user/Invictus_Dam_Project/data/matrix_results/delft3d_workspaces/job_bhakra_dam_break",
+            "mdu_file": "scenario.mdu",
+            "files": [
+              "config/dam_breach.pli",
+              "config/structures.ini",
+              "dam_breach.pli",
+              "mesh/domain_net.nc",
+              "metadata/build_info.json",
+              "scenario.mdu",
+              "terrain/bathymetry.xyz"
+            ],
+            "build_metadata": {
+              "type": "DAM_BREAK",
+              "breach_algorithm": "Verheij-van der Knaap (Algorithm 2)",
+              "crest_level_ini": 333.2399505615234,
+              "breach_width_ini": 140.0,
+              "initial_water_level": 331.2399505615234,
+              "structure_file": "config/structures.ini"
+            }
+          }
+        },
+        "WATER_RELEASE": {
+          "name": "Bhakra Dam - Controlled Release",
+          "params": {
+            "dimensions": 3,
+            "initial_water_level": 331.2399505615234,
+            "breach_width": 140.0,
+            "release_width": 21.0,
+            "failure_time": 1.0,
+            "formation_time": 3.0,
+            "particle_spacing": 10.0,
+            "smoothing_length": 13.0,
+            "duration_cap_s": 8.0,
+            "mesh_resolution": 25.0,
+            "peak_discharge": 27613.0,
+            "initial_discharge": 5522.6,
+            "release_duration": 1.5,
+            "initial_downstream_condition": 0.1
+          },
+          "SPH3D": {
+            "engine": "SPH3D",
+            "status": "COMPLETED",
+            "error": null,
+            "particle_count": 4582,
+            "simulated_time_s": 8.01,
+            "wall_time_s": 60.84,
+            "max_depth_m": 23.75,
+            "mean_depth_flooded_m": 13.66,
+            "flooded_area_km2": 0.245,
+            "grid_resolution_m": 10.0,
+            "initial_water_level_m": 331.24,
+            "diagnostics": {
+              "max_velocity": 18.82451901958859,
+              "relative_volume_error": 0.0
+            },
+            "metadata": {
+              "sph_formulation": "3D WCSPH (Tait EOS)",
+              "solver_dimensionality": 3,
+              "solver_version": "2.0 (Vectorized)",
+              "particle_count": 4582,
+              "crs": "EPSG:4326",
+              "bounds": [
+                635547.0913757568,
+                636947.0913757568,
+                3475385.135174003,
+                3476785.135174003
+              ],
+              "conservation_diagnostics": {
+                "max_velocity": 18.82451901958859,
+                "relative_volume_error": 0.0
+              }
+            }
+          },
+          "DELFT3D": {
+            "engine": "DELFT3D",
+            "status": "WORKSPACE_READY_NO_BINARY",
+            "error": "dflowfm binary not installed on this machine \u2014 full D-Flow FM workspace (mesh/MDU/structures/forcing) generated and ready to execute.",
+            "workspace": "/home/user/Invictus_Dam_Project/data/matrix_results/delft3d_workspaces/job_bhakra_water_release",
+            "mdu_file": "scenario.mdu",
+            "files": [
+              "boundary/downstream.bc",
+              "boundary/downstream.pli",
+              "boundary/release.bc",
+              "boundary/release.pli",
+              "boundary/scenario_bnd.ext",
+              "downstream.bc",
+              "downstream.pli",
+              "mesh/domain_net.nc",
+              "metadata/build_info.json",
+              "release.bc",
+              "release.pli",
+              "scenario.mdu",
+              "terrain/bathymetry.xyz"
+            ],
+            "build_metadata": {
+              "type": "CONTROLLED_RELEASE",
+              "peak_discharge": 27613.0,
+              "time_series_points": 3,
+              "has_user_hydrograph": false
+            }
+          }
+        },
+        "RIVER_BLOCKAGE": {
+          "name": "Bhakra Dam - River Blockage / Landslide Dam Outburst",
+          "params": {
+            "dimensions": 3,
+            "initial_water_level": 309.12779235839844,
+            "breach_width": 140.0,
+            "failure_time": 4.0,
+            "formation_time": 3.0,
+            "particle_spacing": 6.0,
+            "smoothing_length": 7.800000000000001,
+            "duration_cap_s": 10.0,
+            "mesh_resolution": 25.0,
+            "blockage_width": 40.0,
+            "blockage_height": 315.12779235839844,
+            "breach_formation_time": 0.5,
+            "river_discharge": 17628.0,
+            "failure_time_hours": 0.5
+          },
+          "SPH3D": {
+            "engine": "SPH3D",
+            "status": "COMPLETED",
+            "error": null,
+            "particle_count": 3575,
+            "simulated_time_s": 10.01,
+            "wall_time_s": 46.11,
+            "max_depth_m": 13.75,
+            "mean_depth_flooded_m": 5.58,
+            "flooded_area_km2": 0.0872,
+            "grid_resolution_m": 6.0,
+            "initial_water_level_m": 309.13,
+            "diagnostics": {
+              "max_velocity": 13.695961284705866,
+              "relative_volume_error": 0.0
+            },
+            "metadata": {
+              "sph_formulation": "3D WCSPH (Tait EOS)",
+              "solver_dimensionality": 3,
+              "solver_version": "2.0 (Vectorized)",
+              "particle_count": 3575,
+              "crs": "EPSG:4326",
+              "bounds": [
+                635547.0913757568,
+                636947.0913757568,
+                3475385.135174003,
+                3476785.135174003
+              ],
+              "conservation_diagnostics": {
+                "max_velocity": 13.695961284705866,
+                "relative_volume_error": 0.0
+              }
+            }
+          },
+          "DELFT3D": {
+            "engine": "DELFT3D",
+            "status": "WORKSPACE_READY_NO_BINARY",
+            "error": "dflowfm binary not installed on this machine \u2014 full D-Flow FM workspace (mesh/MDU/structures/forcing) generated and ready to execute.",
+            "workspace": "/home/user/Invictus_Dam_Project/data/matrix_results/delft3d_workspaces/job_bhakra_river_blockage",
+            "mdu_file": "scenario.mdu",
+            "files": [
+              "blockage_failure.pli",
+              "blockage_failure_breach.tim",
+              "boundary/downstream.bc",
+              "boundary/downstream.pli",
+              "boundary/scenario_bnd.ext",
+              "boundary/upstream.bc",
+              "boundary/upstream.pli",
+              "config/blockage_failure.pli",
+              "config/blockage_failure_breach.tim",
+              "config/structures.ini",
+              "downstream.bc",
+              "downstream.pli",
+              "mesh/domain_net.nc",
+              "metadata/build_info.json",
+              "scenario.mdu",
+              "terrain/bathymetry.xyz",
+              "upstream.bc",
+              "upstream.pli"
+            ],
+            "build_metadata": {
+              "type": "RIVER_BLOCKAGE",
+              "blockage_height": 315.12779235839844,
+              "blockage_width": 40.0,
+              "failure_time_s": 14400.0,
+              "breach_algorithm": "Timeseries (Algorithm 3)"
+            }
+          }
+        }
+      }
+    },
+    {
+      "dam_id": "tehri",
+      "dam_name": "Tehri Dam",
+      "river": "Bhagirathi",
+      "state": "Uttarakhand",
+      "dam_height_m": 260.5,
+      "gross_storage_bcm": 3.54,
+      "utm_epsg": 32644,
+      "dem": {
+        "path": "/home/user/Invictus_Dam_Project/data/matrix_results/tehri/inputs/dem.tif",
+        "source": "REAL Copernicus GLO-30 clip (reprojected to UTM)",
+        "resolution_m": 10.0
+      },
+      "hydrology_static": {
+        "water_level": 825.96,
+        "inflow": 428.55,
+        "outflow": 450.0
+      },
+      "scenarios": {
+        "DAM_BREAK": {
+          "name": "Tehri Dam - Catastrophic Dam Break",
+          "params": {
+            "dimensions": 3,
+            "initial_water_level": 1279.2832580566405,
+            "breach_width": 140.0,
+            "failure_time": 2.0,
+            "formation_time": 6.0,
+            "particle_spacing": 8.0,
+            "smoothing_length": 10.4,
+            "duration_cap_s": 10.0,
+            "mesh_resolution": 25.0,
+            "breach_elevation": 1281.2832580566405,
+            "crest_level_min": 1247.2832580566405,
+            "breach_formation_time": 1.0
+          },
+          "SPH3D": {
+            "engine": "SPH3D",
+            "status": "COMPLETED",
+            "error": null,
+            "particle_count": 5105,
+            "simulated_time_s": 10.01,
+            "wall_time_s": 80.52,
+            "max_depth_m": 42.75,
+            "mean_depth_flooded_m": 9.59,
+            "flooded_area_km2": 0.244,
+            "grid_resolution_m": 8.0,
+            "initial_water_level_m": 1279.28,
+            "diagnostics": {
+              "max_velocity": 26.444895290928834,
+              "relative_volume_error": 0.0
+            },
+            "metadata": {
+              "sph_formulation": "3D WCSPH (Tait EOS)",
+              "solver_dimensionality": 3,
+              "solver_version": "2.0 (Vectorized)",
+              "particle_count": 5105,
+              "crs": "EPSG:4326",
+              "bounds": [
+                257168.88626250857,
+                258568.88626250857,
+                3362676.6174404994,
+                3364076.6174404994
+              ],
+              "conservation_diagnostics": {
+                "max_velocity": 26.444895290928834,
+                "relative_volume_error": 0.0
+              }
+            }
+          },
+          "DELFT3D": {
+            "engine": "DELFT3D",
+            "status": "WORKSPACE_READY_NO_BINARY",
+            "error": "dflowfm binary not installed on this machine \u2014 full D-Flow FM workspace (mesh/MDU/structures/forcing) generated and ready to execute.",
+            "workspace": "/home/user/Invictus_Dam_Project/data/matrix_results/delft3d_workspaces/job_tehri_dam_break",
+            "mdu_file": "scenario.mdu",
+            "files": [
+              "config/dam_breach.pli",
+              "config/structures.ini",
+              "dam_breach.pli",
+              "mesh/domain_net.nc",
+              "metadata/build_info.json",
+              "scenario.mdu",
+              "terrain/bathymetry.xyz"
+            ],
+            "build_metadata": {
+              "type": "DAM_BREAK",
+              "breach_algorithm": "Verheij-van der Knaap (Algorithm 2)",
+              "crest_level_ini": 1281.2832580566405,
+              "breach_width_ini": 140.0,
+              "initial_water_level": 1279.2832580566405,
+              "structure_file": "config/structures.ini"
+            }
+          }
+        },
+        "WATER_RELEASE": {
+          "name": "Tehri Dam - Controlled Release",
+          "params": {
+            "dimensions": 3,
+            "initial_water_level": 1279.2832580566405,
+            "breach_width": 140.0,
+            "release_width": 21.0,
+            "failure_time": 1.0,
+            "formation_time": 3.0,
+            "particle_spacing": 8.0,
+            "smoothing_length": 10.4,
+            "duration_cap_s": 8.0,
+            "mesh_resolution": 25.0,
+            "peak_discharge": 450.0,
+            "initial_discharge": 90.0,
+            "release_duration": 1.5,
+            "initial_downstream_condition": 0.1
+          },
+          "SPH3D": {
+            "engine": "SPH3D",
+            "status": "COMPLETED",
+            "error": null,
+            "particle_count": 5105,
+            "simulated_time_s": 8.01,
+            "wall_time_s": 66.34,
+            "max_depth_m": 42.75,
+            "mean_depth_flooded_m": 10.43,
+            "flooded_area_km2": 0.2089,
+            "grid_resolution_m": 8.0,
+            "initial_water_level_m": 1279.28,
+            "diagnostics": {
+              "max_velocity": 26.241905152026924,
+              "relative_volume_error": 0.0
+            },
+            "metadata": {
+              "sph_formulation": "3D WCSPH (Tait EOS)",
+              "solver_dimensionality": 3,
+              "solver_version": "2.0 (Vectorized)",
+              "particle_count": 5105,
+              "crs": "EPSG:4326",
+              "bounds": [
+                257168.88626250857,
+                258568.88626250857,
+                3362676.6174404994,
+                3364076.6174404994
+              ],
+              "conservation_diagnostics": {
+                "max_velocity": 26.241905152026924,
+                "relative_volume_error": 0.0
+              }
+            }
+          },
+          "DELFT3D": {
+            "engine": "DELFT3D",
+            "status": "WORKSPACE_READY_NO_BINARY",
+            "error": "dflowfm binary not installed on this machine \u2014 full D-Flow FM workspace (mesh/MDU/structures/forcing) generated and ready to execute.",
+            "workspace": "/home/user/Invictus_Dam_Project/data/matrix_results/delft3d_workspaces/job_tehri_water_release",
+            "mdu_file": "scenario.mdu",
+            "files": [
+              "boundary/downstream.bc",
+              "boundary/downstream.pli",
+              "boundary/release.bc",
+              "boundary/release.pli",
+              "boundary/scenario_bnd.ext",
+              "downstream.bc",
+              "downstream.pli",
+              "mesh/domain_net.nc",
+              "metadata/build_info.json",
+              "release.bc",
+              "release.pli",
+              "scenario.mdu",
+              "terrain/bathymetry.xyz"
+            ],
+            "build_metadata": {
+              "type": "CONTROLLED_RELEASE",
+              "peak_discharge": 450.0,
+              "time_series_points": 3,
+              "has_user_hydrograph": false
+            }
+          }
+        },
+        "RIVER_BLOCKAGE": {
+          "name": "Tehri Dam - River Blockage / Landslide Dam Outburst",
+          "params": {
+            "dimensions": 3,
+            "initial_water_level": 1194.765362548828,
+            "breach_width": 140.0,
+            "failure_time": 4.0,
+            "formation_time": 3.0,
+            "particle_spacing": 6.0,
+            "smoothing_length": 7.800000000000001,
+            "duration_cap_s": 10.0,
+            "mesh_resolution": 25.0,
+            "blockage_width": 40.0,
+            "blockage_height": 1200.765362548828,
+            "breach_formation_time": 0.5,
+            "river_discharge": 428.55,
+            "failure_time_hours": 0.5
+          },
+          "SPH3D": {
+            "engine": "SPH3D",
+            "status": "COMPLETED",
+            "error": null,
+            "particle_count": 5889,
+            "simulated_time_s": 10.01,
+            "wall_time_s": 95.15,
+            "max_depth_m": 39.24,
+            "mean_depth_flooded_m": 8.85,
+            "flooded_area_km2": 0.1384,
+            "grid_resolution_m": 6.0,
+            "initial_water_level_m": 1194.77,
+            "diagnostics": {
+              "max_velocity": 29.66813926420339,
+              "relative_volume_error": 0.0
+            },
+            "metadata": {
+              "sph_formulation": "3D WCSPH (Tait EOS)",
+              "solver_dimensionality": 3,
+              "solver_version": "2.0 (Vectorized)",
+              "particle_count": 5889,
+              "crs": "EPSG:4326",
+              "bounds": [
+                257168.88626250857,
+                258568.88626250857,
+                3362676.6174404994,
+                3364076.6174404994
+              ],
+              "conservation_diagnostics": {
+                "max_velocity": 29.66813926420339,
+                "relative_volume_error": 0.0
+              }
+            }
+          },
+          "DELFT3D": {
+            "engine": "DELFT3D",
+            "status": "WORKSPACE_READY_NO_BINARY",
+            "error": "dflowfm binary not installed on this machine \u2014 full D-Flow FM workspace (mesh/MDU/structures/forcing) generated and ready to execute.",
+            "workspace": "/home/user/Invictus_Dam_Project/data/matrix_results/delft3d_workspaces/job_tehri_river_blockage",
+            "mdu_file": "scenario.mdu",
+            "files": [
+              "blockage_failure.pli",
+              "blockage_failure_breach.tim",
+              "boundary/downstream.bc",
+              "boundary/downstream.pli",
+              "boundary/scenario_bnd.ext",
+              "boundary/upstream.bc",
+              "boundary/upstream.pli",
+              "config/blockage_failure.pli",
+              "config/blockage_failure_breach.tim",
+              "config/structures.ini",
+              "downstream.bc",
+              "downstream.pli",
+              "mesh/domain_net.nc",
+              "metadata/build_info.json",
+              "scenario.mdu",
+              "terrain/bathymetry.xyz",
+              "upstream.bc",
+              "upstream.pli"
+            ],
+            "build_metadata": {
+              "type": "RIVER_BLOCKAGE",
+              "blockage_height": 1200.765362548828,
+              "blockage_width": 40.0,
+              "failure_time_s": 14400.0,
+              "breach_algorithm": "Timeseries (Algorithm 3)"
+            }
+          }
+        }
+      }
+    },
+    {
+      "dam_id": "hirakud",
+      "dam_name": "Hirakud Dam",
+      "river": "Mahanadi",
+      "state": "Odisha",
+      "dam_height_m": 60.96,
+      "gross_storage_bcm": 8.136,
+      "utm_epsg": 32644,
+      "dem": {
+        "path": "/home/user/Invictus_Dam_Project/data/matrix_results/hirakud/inputs/dem.tif",
+        "source": "SYNTHETIC_VALLEY (schematic, prototype)",
+        "resolution_m": 10.0
+      },
+      "hydrology_static": {
+        "water_level": 187.28,
+        "inflow": null,
+        "outflow": null
+      },
+      "scenarios": {
+        "DAM_BREAK": {
+          "name": "Hirakud Dam - Catastrophic Dam Break",
+          "params": {
+            "dimensions": 3,
+            "initial_water_level": 314.3839505615234,
+            "breach_width": 140.0,
+            "failure_time": 2.0,
+            "formation_time": 6.0,
+            "particle_spacing": 6.0,
+            "smoothing_length": 7.800000000000001,
+            "duration_cap_s": 10.0,
+            "mesh_resolution": 25.0,
+            "breach_elevation": 316.3839505615234,
+            "crest_level_min": 303.2399505615234,
+            "breach_formation_time": 1.0
+          },
+          "SPH3D": {
+            "engine": "SPH3D",
+            "status": "COMPLETED",
+            "error": null,
+            "particle_count": 6012,
+            "simulated_time_s": 10.01,
+            "wall_time_s": 79.11,
+            "max_depth_m": 8.97,
+            "mean_depth_flooded_m": 5.51,
+            "flooded_area_km2": 0.1329,
+            "grid_resolution_m": 6.0,
+            "initial_water_level_m": 314.38,
+            "diagnostics": {
+              "max_velocity": 7.562655664210273,
+              "relative_volume_error": 0.0
+            },
+            "metadata": {
+              "sph_formulation": "3D WCSPH (Tait EOS)",
+              "solver_dimensionality": 3,
+              "solver_version": "2.0 (Vectorized)",
+              "particle_count": 6012,
+              "crs": "EPSG:4326",
+              "bounds": [
+                796519.9078257484,
+                797919.9078257484,
+                2387271.5095533705,
+                2388671.5095533705
+              ],
+              "conservation_diagnostics": {
+                "max_velocity": 7.562655664210273,
+                "relative_volume_error": 0.0
+              }
+            }
+          },
+          "DELFT3D": {
+            "engine": "DELFT3D",
+            "status": "WORKSPACE_READY_NO_BINARY",
+            "error": "dflowfm binary not installed on this machine \u2014 full D-Flow FM workspace (mesh/MDU/structures/forcing) generated and ready to execute.",
+            "workspace": "/home/user/Invictus_Dam_Project/data/matrix_results/delft3d_workspaces/job_hirakud_dam_break",
+            "mdu_file": "scenario.mdu",
+            "files": [
+              "config/dam_breach.pli",
+              "config/structures.ini",
+              "dam_breach.pli",
+              "mesh/domain_net.nc",
+              "metadata/build_info.json",
+              "scenario.mdu",
+              "terrain/bathymetry.xyz"
+            ],
+            "build_metadata": {
+              "type": "DAM_BREAK",
+              "breach_algorithm": "Verheij-van der Knaap (Algorithm 2)",
+              "crest_level_ini": 316.3839505615234,
+              "breach_width_ini": 140.0,
+              "initial_water_level": 314.3839505615234,
+              "structure_file": "config/structures.ini"
+            }
+          }
+        },
+        "WATER_RELEASE": {
+          "name": "Hirakud Dam - Controlled Release",
+          "params": {
+            "dimensions": 3,
+            "initial_water_level": 314.3839505615234,
+            "breach_width": 140.0,
+            "release_width": 21.0,
+            "failure_time": 1.0,
+            "formation_time": 3.0,
+            "particle_spacing": 6.0,
+            "smoothing_length": 7.800000000000001,
+            "duration_cap_s": 8.0,
+            "mesh_resolution": 25.0,
+            "peak_discharge": 300.0,
+            "initial_discharge": 60.0,
+            "release_duration": 1.5,
+            "initial_downstream_condition": 0.1
+          },
+          "SPH3D": {
+            "engine": "SPH3D",
+            "status": "COMPLETED",
+            "error": null,
+            "particle_count": 6012,
+            "simulated_time_s": 8.01,
+            "wall_time_s": 66.39,
+            "max_depth_m": 7.75,
+            "mean_depth_flooded_m": 5.57,
+            "flooded_area_km2": 0.1323,
+            "grid_resolution_m": 6.0,
+            "initial_water_level_m": 314.38,
+            "diagnostics": {
+              "max_velocity": 3.178875519994231,
+              "relative_volume_error": 0.0
+            },
+            "metadata": {
+              "sph_formulation": "3D WCSPH (Tait EOS)",
+              "solver_dimensionality": 3,
+              "solver_version": "2.0 (Vectorized)",
+              "particle_count": 6012,
+              "crs": "EPSG:4326",
+              "bounds": [
+                796519.9078257484,
+                797919.9078257484,
+                2387271.5095533705,
+                2388671.5095533705
+              ],
+              "conservation_diagnostics": {
+                "max_velocity": 3.178875519994231,
+                "relative_volume_error": 0.0
+              }
+            }
+          },
+          "DELFT3D": {
+            "engine": "DELFT3D",
+            "status": "WORKSPACE_READY_NO_BINARY",
+            "error": "dflowfm binary not installed on this machine \u2014 full D-Flow FM workspace (mesh/MDU/structures/forcing) generated and ready to execute.",
+            "workspace": "/home/user/Invictus_Dam_Project/data/matrix_results/delft3d_workspaces/job_hirakud_water_release",
+            "mdu_file": "scenario.mdu",
+            "files": [
+              "boundary/downstream.bc",
+              "boundary/downstream.pli",
+              "boundary/release.bc",
+              "boundary/release.pli",
+              "boundary/scenario_bnd.ext",
+              "downstream.bc",
+              "downstream.pli",
+              "mesh/domain_net.nc",
+              "metadata/build_info.json",
+              "release.bc",
+              "release.pli",
+              "scenario.mdu",
+              "terrain/bathymetry.xyz"
+            ],
+            "build_metadata": {
+              "type": "CONTROLLED_RELEASE",
+              "peak_discharge": 300.0,
+              "time_series_points": 3,
+              "has_user_hydrograph": false
+            }
+          }
+        },
+        "RIVER_BLOCKAGE": {
+          "name": "Hirakud Dam - River Blockage / Landslide Dam Outburst",
+          "params": {
+            "dimensions": 3,
+            "initial_water_level": 306.27179235839844,
+            "breach_width": 140.0,
+            "failure_time": 4.0,
+            "formation_time": 3.0,
+            "particle_spacing": 6.0,
+            "smoothing_length": 7.800000000000001,
+            "duration_cap_s": 10.0,
+            "mesh_resolution": 25.0,
+            "blockage_width": 40.0,
+            "blockage_height": 312.27179235839844,
+            "breach_formation_time": 0.5,
+            "river_discharge": 250.0,
+            "failure_time_hours": 0.5
+          },
+          "SPH3D": {
+            "engine": "SPH3D",
+            "status": "COMPLETED",
+            "error": null,
+            "particle_count": 2529,
+            "simulated_time_s": 10.01,
+            "wall_time_s": 28.34,
+            "max_depth_m": 13.75,
+            "mean_depth_flooded_m": 4.57,
+            "flooded_area_km2": 0.064,
+            "grid_resolution_m": 6.0,
+            "initial_water_level_m": 306.27,
+            "diagnostics": {
+              "max_velocity": 8.823863580011865,
+              "relative_volume_error": 0.0
+            },
+            "metadata": {
+              "sph_formulation": "3D WCSPH (Tait EOS)",
+              "solver_dimensionality": 3,
+              "solver_version": "2.0 (Vectorized)",
+              "particle_count": 2529,
+              "crs": "EPSG:4326",
+              "bounds": [
+                796519.9078257484,
+                797919.9078257484,
+                2387271.5095533705,
+                2388671.5095533705
+              ],
+              "conservation_diagnostics": {
+                "max_velocity": 8.823863580011865,
+                "relative_volume_error": 0.0
+              }
+            }
+          },
+          "DELFT3D": {
+            "engine": "DELFT3D",
+            "status": "WORKSPACE_READY_NO_BINARY",
+            "error": "dflowfm binary not installed on this machine \u2014 full D-Flow FM workspace (mesh/MDU/structures/forcing) generated and ready to execute.",
+            "workspace": "/home/user/Invictus_Dam_Project/data/matrix_results/delft3d_workspaces/job_hirakud_river_blockage",
+            "mdu_file": "scenario.mdu",
+            "files": [
+              "blockage_failure.pli",
+              "blockage_failure_breach.tim",
+              "boundary/downstream.bc",
+              "boundary/downstream.pli",
+              "boundary/scenario_bnd.ext",
+              "boundary/upstream.bc",
+              "boundary/upstream.pli",
+              "config/blockage_failure.pli",
+              "config/blockage_failure_breach.tim",
+              "config/structures.ini",
+              "downstream.bc",
+              "downstream.pli",
+              "mesh/domain_net.nc",
+              "metadata/build_info.json",
+              "scenario.mdu",
+              "terrain/bathymetry.xyz",
+              "upstream.bc",
+              "upstream.pli"
+            ],
+            "build_metadata": {
+              "type": "RIVER_BLOCKAGE",
+              "blockage_height": 312.27179235839844,
+              "blockage_width": 40.0,
+              "failure_time_s": 14400.0,
+              "breach_algorithm": "Timeseries (Algorithm 3)"
+            }
+          }
+        }
+      }
+    },
+    {
+      "dam_id": "sardar_sarovar",
+      "dam_name": "Sardar Sarovar Dam",
+      "river": "Narmada",
+      "state": "Gujarat",
+      "dam_height_m": 163.0,
+      "gross_storage_bcm": 9.5,
+      "utm_epsg": 32643,
+      "dem": {
+        "path": "/home/user/Invictus_Dam_Project/data/matrix_results/sardar_sarovar/inputs/dem.tif",
+        "source": "SYNTHETIC_VALLEY (schematic, prototype)",
+        "resolution_m": 10.0
+      },
+      "hydrology_static": {
+        "water_level": 132.5,
+        "inflow": null,
+        "outflow": null
+      },
+      "scenarios": {
+        "DAM_BREAK": {
+          "name": "Sardar Sarovar Dam - Catastrophic Dam Break",
+          "params": {
+            "dimensions": 3,
+            "initial_water_level": 325.6899505615234,
+            "breach_width": 140.0,
+            "failure_time": 2.0,
+            "formation_time": 6.0,
+            "particle_spacing": 8.0,
+            "smoothing_length": 10.4,
+            "duration_cap_s": 10.0,
+            "mesh_resolution": 25.0,
+            "breach_elevation": 327.6899505615234,
+            "crest_level_min": 299.2399505615234,
+            "breach_formation_time": 1.0
+          },
+          "SPH3D": {
+            "engine": "SPH3D",
+            "status": "COMPLETED",
+            "error": null,
+            "particle_count": 6534,
+            "simulated_time_s": 10.01,
+            "wall_time_s": 102.47,
+            "max_depth_m": 19.38,
+            "mean_depth_flooded_m": 9.72,
+            "flooded_area_km2": 0.2455,
+            "grid_resolution_m": 8.0,
+            "initial_water_level_m": 325.69,
+            "diagnostics": {
+              "max_velocity": 19.702376034033,
+              "relative_volume_error": 0.0
+            },
+            "metadata": {
+              "sph_formulation": "3D WCSPH (Tait EOS)",
+              "solver_dimensionality": 3,
+              "solver_version": "2.0 (Vectorized)",
+              "particle_count": 6534,
+              "crs": "EPSG:4326",
+              "bounds": [
+                369939.52862849494,
+                371339.52862849494,
+                2414079.585674863,
+                2415479.585674863
+              ],
+              "conservation_diagnostics": {
+                "max_velocity": 19.702376034033,
+                "relative_volume_error": 0.0
+              }
+            }
+          },
+          "DELFT3D": {
+            "engine": "DELFT3D",
+            "status": "WORKSPACE_READY_NO_BINARY",
+            "error": "dflowfm binary not installed on this machine \u2014 full D-Flow FM workspace (mesh/MDU/structures/forcing) generated and ready to execute.",
+            "workspace": "/home/user/Invictus_Dam_Project/data/matrix_results/delft3d_workspaces/job_sardar_dam_break",
+            "mdu_file": "scenario.mdu",
+            "files": [
+              "config/dam_breach.pli",
+              "config/structures.ini",
+              "dam_breach.pli",
+              "mesh/domain_net.nc",
+              "metadata/build_info.json",
+              "scenario.mdu",
+              "terrain/bathymetry.xyz"
+            ],
+            "build_metadata": {
+              "type": "DAM_BREAK",
+              "breach_algorithm": "Verheij-van der Knaap (Algorithm 2)",
+              "crest_level_ini": 327.6899505615234,
+              "breach_width_ini": 140.0,
+              "initial_water_level": 325.6899505615234,
+              "structure_file": "config/structures.ini"
+            }
+          }
+        },
+        "WATER_RELEASE": {
+          "name": "Sardar Sarovar Dam - Controlled Release",
+          "params": {
+            "dimensions": 3,
+            "initial_water_level": 325.6899505615234,
+            "breach_width": 140.0,
+            "release_width": 21.0,
+            "failure_time": 1.0,
+            "formation_time": 3.0,
+            "particle_spacing": 8.0,
+            "smoothing_length": 10.4,
+            "duration_cap_s": 8.0,
+            "mesh_resolution": 25.0,
+            "peak_discharge": 300.0,
+            "initial_discharge": 60.0,
+            "release_duration": 1.5,
+            "initial_downstream_condition": 0.1
+          },
+          "SPH3D": {
+            "engine": "SPH3D",
+            "status": "COMPLETED",
+            "error": null,
+            "particle_count": 6534,
+            "simulated_time_s": 8.01,
+            "wall_time_s": 91.47,
+            "max_depth_m": 18.75,
+            "mean_depth_flooded_m": 10.59,
+            "flooded_area_km2": 0.2248,
+            "grid_resolution_m": 8.0,
+            "initial_water_level_m": 325.69,
+            "diagnostics": {
+              "max_velocity": 16.44432525426509,
+              "relative_volume_error": 0.0
+            },
+            "metadata": {
+              "sph_formulation": "3D WCSPH (Tait EOS)",
+              "solver_dimensionality": 3,
+              "solver_version": "2.0 (Vectorized)",
+              "particle_count": 6534,
+              "crs": "EPSG:4326",
+              "bounds": [
+                369939.52862849494,
+                371339.52862849494,
+                2414079.585674863,
+                2415479.585674863
+              ],
+              "conservation_diagnostics": {
+                "max_velocity": 16.44432525426509,
+                "relative_volume_error": 0.0
+              }
+            }
+          },
+          "DELFT3D": {
+            "engine": "DELFT3D",
+            "status": "WORKSPACE_READY_NO_BINARY",
+            "error": "dflowfm binary not installed on this machine \u2014 full D-Flow FM workspace (mesh/MDU/structures/forcing) generated and ready to execute.",
+            "workspace": "/home/user/Invictus_Dam_Project/data/matrix_results/delft3d_workspaces/job_sardar_water_release",
+            "mdu_file": "scenario.mdu",
+            "files": [
+              "boundary/downstream.bc",
+              "boundary/downstream.pli",
+              "boundary/release.bc",
+              "boundary/release.pli",
+              "boundary/scenario_bnd.ext",
+              "downstream.bc",
+              "downstream.pli",
+              "mesh/domain_net.nc",
+              "metadata/build_info.json",
+              "release.bc",
+              "release.pli",
+              "scenario.mdu",
+              "terrain/bathymetry.xyz"
+            ],
+            "build_metadata": {
+              "type": "CONTROLLED_RELEASE",
+              "peak_discharge": 300.0,
+              "time_series_points": 3,
+              "has_user_hydrograph": false
+            }
+          }
+        },
+        "RIVER_BLOCKAGE": {
+          "name": "Sardar Sarovar Dam - River Blockage / Landslide Dam Outburst",
+          "params": {
+            "dimensions": 3,
+            "initial_water_level": 309.12779235839844,
+            "breach_width": 140.0,
+            "failure_time": 4.0,
+            "formation_time": 3.0,
+            "particle_spacing": 6.0,
+            "smoothing_length": 7.800000000000001,
+            "duration_cap_s": 10.0,
+            "mesh_resolution": 25.0,
+            "blockage_width": 40.0,
+            "blockage_height": 315.12779235839844,
+            "breach_formation_time": 0.5,
+            "river_discharge": 250.0,
+            "failure_time_hours": 0.5
+          },
+          "SPH3D": {
+            "engine": "SPH3D",
+            "status": "COMPLETED",
+            "error": null,
+            "particle_count": 3575,
+            "simulated_time_s": 10.01,
+            "wall_time_s": 45.8,
+            "max_depth_m": 13.75,
+            "mean_depth_flooded_m": 5.58,
+            "flooded_area_km2": 0.0872,
+            "grid_resolution_m": 6.0,
+            "initial_water_level_m": 309.13,
+            "diagnostics": {
+              "max_velocity": 13.695961283897303,
+              "relative_volume_error": 0.0
+            },
+            "metadata": {
+              "sph_formulation": "3D WCSPH (Tait EOS)",
+              "solver_dimensionality": 3,
+              "solver_version": "2.0 (Vectorized)",
+              "particle_count": 3575,
+              "crs": "EPSG:4326",
+              "bounds": [
+                369939.52862849494,
+                371339.52862849494,
+                2414079.585674863,
+                2415479.585674863
+              ],
+              "conservation_diagnostics": {
+                "max_velocity": 13.695961283897303,
+                "relative_volume_error": 0.0
+              }
+            }
+          },
+          "DELFT3D": {
+            "engine": "DELFT3D",
+            "status": "WORKSPACE_READY_NO_BINARY",
+            "error": "dflowfm binary not installed on this machine \u2014 full D-Flow FM workspace (mesh/MDU/structures/forcing) generated and ready to execute.",
+            "workspace": "/home/user/Invictus_Dam_Project/data/matrix_results/delft3d_workspaces/job_sardar_river_blockage",
+            "mdu_file": "scenario.mdu",
+            "files": [
+              "blockage_failure.pli",
+              "blockage_failure_breach.tim",
+              "boundary/downstream.bc",
+              "boundary/downstream.pli",
+              "boundary/scenario_bnd.ext",
+              "boundary/upstream.bc",
+              "boundary/upstream.pli",
+              "config/blockage_failure.pli",
+              "config/blockage_failure_breach.tim",
+              "config/structures.ini",
+              "downstream.bc",
+              "downstream.pli",
+              "mesh/domain_net.nc",
+              "metadata/build_info.json",
+              "scenario.mdu",
+              "terrain/bathymetry.xyz",
+              "upstream.bc",
+              "upstream.pli"
+            ],
+            "build_metadata": {
+              "type": "RIVER_BLOCKAGE",
+              "blockage_height": 315.12779235839844,
+              "blockage_width": 40.0,
+              "failure_time_s": 14400.0,
+              "breach_algorithm": "Timeseries (Algorithm 3)"
+            }
+          }
+        }
+      }
+    },
+    {
+      "dam_id": "mettur",
+      "dam_name": "Mettur Dam",
+      "river": "Cauvery",
+      "state": "Tamil Nadu",
+      "dam_height_m": 65.23,
+      "gross_storage_bcm": 2.71,
+      "utm_epsg": 32643,
+      "dem": {
+        "path": "/home/user/Invictus_Dam_Project/data/matrix_results/mettur/inputs/dem.tif",
+        "source": "SYNTHETIC_VALLEY (schematic, prototype)",
+        "resolution_m": 10.0
+      },
+      "hydrology_static": {
+        "water_level": 240.79,
+        "inflow": null,
+        "outflow": null
+      },
+      "scenarios": {
+        "DAM_BREAK": {
+          "name": "Mettur Dam - Catastrophic Dam Break",
+          "params": {
+            "dimensions": 3,
+            "initial_water_level": 315.0244505615234,
+            "breach_width": 140.0,
+            "failure_time": 2.0,
+            "formation_time": 6.0,
+            "particle_spacing": 6.0,
+            "smoothing_length": 7.800000000000001,
+            "duration_cap_s": 10.0,
+            "mesh_resolution": 25.0,
+            "breach_elevation": 317.0244505615234,
+            "crest_level_min": 303.2399505615234,
+            "breach_formation_time": 1.0
+          },
+          "SPH3D": {
+            "engine": "SPH3D",
+            "status": "COMPLETED",
+            "error": null,
+            "particle_count": 6304,
+            "simulated_time_s": 10.01,
+            "wall_time_s": 93.18,
+            "max_depth_m": 8.97,
+            "mean_depth_flooded_m": 5.7,
+            "flooded_area_km2": 0.1367,
+            "grid_resolution_m": 6.0,
+            "initial_water_level_m": 315.02,
+            "diagnostics": {
+              "max_velocity": 7.562675659993462,
+              "relative_volume_error": 0.0
+            },
+            "metadata": {
+              "sph_formulation": "3D WCSPH (Tait EOS)",
+              "solver_dimensionality": 3,
+              "solver_version": "2.0 (Vectorized)",
+              "particle_count": 6304,
+              "crs": "EPSG:4326",
+              "bounds": [
+                804634.9087633092,
+                806034.9087633092,
+                1305442.884690257,
+                1306842.884690257
+              ],
+              "conservation_diagnostics": {
+                "max_velocity": 7.562675659993462,
+                "relative_volume_error": 0.0
+              }
+            }
+          },
+          "DELFT3D": {
+            "engine": "DELFT3D",
+            "status": "WORKSPACE_READY_NO_BINARY",
+            "error": "dflowfm binary not installed on this machine \u2014 full D-Flow FM workspace (mesh/MDU/structures/forcing) generated and ready to execute.",
+            "workspace": "/home/user/Invictus_Dam_Project/data/matrix_results/delft3d_workspaces/job_mettur_dam_break",
+            "mdu_file": "scenario.mdu",
+            "files": [
+              "config/dam_breach.pli",
+              "config/structures.ini",
+              "dam_breach.pli",
+              "mesh/domain_net.nc",
+              "metadata/build_info.json",
+              "scenario.mdu",
+              "terrain/bathymetry.xyz"
+            ],
+            "build_metadata": {
+              "type": "DAM_BREAK",
+              "breach_algorithm": "Verheij-van der Knaap (Algorithm 2)",
+              "crest_level_ini": 317.0244505615234,
+              "breach_width_ini": 140.0,
+              "initial_water_level": 315.0244505615234,
+              "structure_file": "config/structures.ini"
+            }
+          }
+        },
+        "WATER_RELEASE": {
+          "name": "Mettur Dam - Controlled Release",
+          "params": {
+            "dimensions": 3,
+            "initial_water_level": 315.0244505615234,
+            "breach_width": 140.0,
+            "release_width": 21.0,
+            "failure_time": 1.0,
+            "formation_time": 3.0,
+            "particle_spacing": 6.0,
+            "smoothing_length": 7.800000000000001,
+            "duration_cap_s": 8.0,
+            "mesh_resolution": 25.0,
+            "peak_discharge": 300.0,
+            "initial_discharge": 60.0,
+            "release_duration": 1.5,
+            "initial_downstream_condition": 0.1
+          },
+          "SPH3D": {
+            "engine": "SPH3D",
+            "status": "COMPLETED",
+            "error": null,
+            "particle_count": 6304,
+            "simulated_time_s": 8.01,
+            "wall_time_s": 71.35,
+            "max_depth_m": 7.75,
+            "mean_depth_flooded_m": 5.73,
+            "flooded_area_km2": 0.1364,
+            "grid_resolution_m": 6.0,
+            "initial_water_level_m": 315.02,
+            "diagnostics": {
+              "max_velocity": 3.196021483736039,
+              "relative_volume_error": 0.0
+            },
+            "metadata": {
+              "sph_formulation": "3D WCSPH (Tait EOS)",
+              "solver_dimensionality": 3,
+              "solver_version": "2.0 (Vectorized)",
+              "particle_count": 6304,
+              "crs": "EPSG:4326",
+              "bounds": [
+                804634.9087633092,
+                806034.9087633092,
+                1305442.884690257,
+                1306842.884690257
+              ],
+              "conservation_diagnostics": {
+                "max_velocity": 3.196021483736039,
+                "relative_volume_error": 0.0
+              }
+            }
+          },
+          "DELFT3D": {
+            "engine": "DELFT3D",
+            "status": "WORKSPACE_READY_NO_BINARY",
+            "error": "dflowfm binary not installed on this machine \u2014 full D-Flow FM workspace (mesh/MDU/structures/forcing) generated and ready to execute.",
+            "workspace": "/home/user/Invictus_Dam_Project/data/matrix_results/delft3d_workspaces/job_mettur_water_release",
+            "mdu_file": "scenario.mdu",
+            "files": [
+              "boundary/downstream.bc",
+              "boundary/downstream.pli",
+              "boundary/release.bc",
+              "boundary/release.pli",
+              "boundary/scenario_bnd.ext",
+              "downstream.bc",
+              "downstream.pli",
+              "mesh/domain_net.nc",
+              "metadata/build_info.json",
+              "release.bc",
+              "release.pli",
+              "scenario.mdu",
+              "terrain/bathymetry.xyz"
+            ],
+            "build_metadata": {
+              "type": "CONTROLLED_RELEASE",
+              "peak_discharge": 300.0,
+              "time_series_points": 3,
+              "has_user_hydrograph": false
+            }
+          }
+        },
+        "RIVER_BLOCKAGE": {
+          "name": "Mettur Dam - River Blockage / Landslide Dam Outburst",
+          "params": {
+            "dimensions": 3,
+            "initial_water_level": 306.9122923583984,
+            "breach_width": 140.0,
+            "failure_time": 4.0,
+            "formation_time": 3.0,
+            "particle_spacing": 6.0,
+            "smoothing_length": 7.800000000000001,
+            "duration_cap_s": 10.0,
+            "mesh_resolution": 25.0,
+            "blockage_width": 40.0,
+            "blockage_height": 312.9122923583984,
+            "breach_formation_time": 0.5,
+            "river_discharge": 250.0,
+            "failure_time_hours": 0.5
+          },
+          "SPH3D": {
+            "engine": "SPH3D",
+            "status": "COMPLETED",
+            "error": null,
+            "particle_count": 2762,
+            "simulated_time_s": 10.01,
+            "wall_time_s": 33.06,
+            "max_depth_m": 13.75,
+            "mean_depth_flooded_m": 4.75,
+            "flooded_area_km2": 0.0707,
+            "grid_resolution_m": 6.0,
+            "initial_water_level_m": 306.91,
+            "diagnostics": {
+              "max_velocity": 9.007441543464326,
+              "relative_volume_error": 0.0
+            },
+            "metadata": {
+              "sph_formulation": "3D WCSPH (Tait EOS)",
+              "solver_dimensionality": 3,
+              "solver_version": "2.0 (Vectorized)",
+              "particle_count": 2762,
+              "crs": "EPSG:4326",
+              "bounds": [
+                804634.9087633092,
+                806034.9087633092,
+                1305442.884690257,
+                1306842.884690257
+              ],
+              "conservation_diagnostics": {
+                "max_velocity": 9.007441543464326,
+                "relative_volume_error": 0.0
+              }
+            }
+          },
+          "DELFT3D": {
+            "engine": "DELFT3D",
+            "status": "WORKSPACE_READY_NO_BINARY",
+            "error": "dflowfm binary not installed on this machine \u2014 full D-Flow FM workspace (mesh/MDU/structures/forcing) generated and ready to execute.",
+            "workspace": "/home/user/Invictus_Dam_Project/data/matrix_results/delft3d_workspaces/job_mettur_river_blockage",
+            "mdu_file": "scenario.mdu",
+            "files": [
+              "blockage_failure.pli",
+              "blockage_failure_breach.tim",
+              "boundary/downstream.bc",
+              "boundary/downstream.pli",
+              "boundary/scenario_bnd.ext",
+              "boundary/upstream.bc",
+              "boundary/upstream.pli",
+              "config/blockage_failure.pli",
+              "config/blockage_failure_breach.tim",
+              "config/structures.ini",
+              "downstream.bc",
+              "downstream.pli",
+              "mesh/domain_net.nc",
+              "metadata/build_info.json",
+              "scenario.mdu",
+              "terrain/bathymetry.xyz",
+              "upstream.bc",
+              "upstream.pli"
+            ],
+            "build_metadata": {
+              "type": "RIVER_BLOCKAGE",
+              "blockage_height": 312.9122923583984,
+              "blockage_width": 40.0,
+              "failure_time_s": 14400.0,
+              "breach_algorithm": "Timeseries (Algorithm 3)"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

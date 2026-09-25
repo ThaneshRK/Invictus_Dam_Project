@@ -235,7 +235,8 @@ const ScenarioBuilder: React.FC = () => {
           <div className="form-group">
             <label className="form-label">Solver Engine</label>
             <select className="form-select" value={engine} onChange={e => setEngine(e.target.value)}>
-              <option value="SPH">SPH (Smooth Particle Hydrodynamics)</option>
+              <option value="SPH">SPH 2D (Depth-Averaged SWE)</option>
+              <option value="SPH3D">SPH 3D (Particle-Based, True 3D)</option>
               <option value="DELFT3D">Delft3D Flexible Mesh</option>
             </select>
           </div>

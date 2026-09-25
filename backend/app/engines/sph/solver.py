@@ -158,6 +158,8 @@ class SPH3DSolver(SPHSolverBase):
                 
         points_3d = np.array(points_3d)
         N_req = len(points_3d)
+        if N_req == 0:
+            raise ValueError("No wet cells found: initial water level is below terrain everywhere in the water polygon.")
         if N_req > self.max_particles:
             raise ValueError(f"Requested particles ({N_req}) exceeds 3D limit ({self.max_particles}).")
             
@@ -169,7 +171,11 @@ class SPH3DSolver(SPHSolverBase):
         self.state.add_particles(points_3d, vels, masses, ParticleType.FLUID)
         self.initial_volume = N_req * (spacing**3)
         
-        self.boundary_handler = BoundaryHandler(bounds=bounds)
+        # Vertical domain bounds: [bed floor .. initial water surface + 1 spacing headroom]
+        z_floor = float(np.min(z_b_valid)) - spacing
+        z_ceil = float(initial_water_surface_elevation) + spacing
+        bounds_3d = list(bounds) + [z_floor, z_ceil] if len(bounds) == 4 else list(bounds)
+        self.boundary_handler = BoundaryHandler(bounds=bounds_3d)
         for block in blockages:
             self.boundary_handler.add_blockage(**block)
             
@@ -177,6 +183,10 @@ class SPH3DSolver(SPHSolverBase):
             self.boundary_handler.add_dynamic_breach(breach)
             
         self.terrain_handler = terrain_handler
+        
+        # Seed per-particle bed elevation (used by the 3D grid interpolation branch)
+        z_seed, _ = terrain_handler.get_elevation_and_gradient(points_3d[:, :2])
+        self.state.z_b[:self.state.num_particles] = z_seed
         
     def step(self):
         if self.state.num_particles == 0:
@@ -187,6 +197,9 @@ class SPH3DSolver(SPHSolverBase):
         # Terrain collision penalty logic
         pos_2d = self.state.pos[fluid_idx, :2]
         z_b, grad_z = self.terrain_handler.get_elevation_and_gradient(pos_2d)
+        
+        # Keep per-particle bed elevation current for result spatialization
+        self.state.z_b[fluid_idx] = z_b
         
         # Particles below terrain get pushed up
         below_terrain = self.state.pos[fluid_idx, 2] < z_b
