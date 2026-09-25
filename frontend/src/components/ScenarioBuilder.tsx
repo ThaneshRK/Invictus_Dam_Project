@@ -83,6 +83,15 @@ const ScenarioBuilder: React.FC = () => {
       
       const scenarioId = scenarioRes.data.id;
 
+      // START SIMULATION GATE
+      try {
+        await api.post(`/scenarios/${scenarioId}/validate`);
+      } catch (validationErr: any) {
+        const msg = validationErr?.response?.data?.detail || "Validation failed";
+        alert(`Cannot start simulation. Missing inputs or invalid configuration:\n${msg}`);
+        return; // Prevent simulation creation
+      }
+
       await api.post('/simulations', {
         project_id: activeProject.id,
         scenario_id: scenarioId,

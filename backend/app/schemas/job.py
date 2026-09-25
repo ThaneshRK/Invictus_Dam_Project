@@ -22,6 +22,7 @@ class SimulationJobRead(BaseModel):
     end_time: Optional[datetime] = None
     error: Optional[str] = None
     result_references: Optional[Dict[str, Any]] = None
+    input_snapshot: Optional[Dict[str, Any]] = None
     
     class Config:
         from_attributes = True

@@ -1,0 +1,74 @@
+{
+  "dam_id": "bhakra",
+  "dam_name": "Bhakra Dam",
+  "reservoir_name": "Gobind Sagar",
+  "river_name": "Sutlej",
+  "observations": [
+    {
+      "timestamp": "2026-09-23T18:00:00+05:30",
+      "observation_date": "2026-09-23",
+      "observation_time": "18:00 hrs",
+      "observation_type": "OBSERVATION",
+      "status": "Static Reference",
+      "water_level": {
+        "value": 1642.2,
+        "unit": "ft",
+        "normalized_value": 500.54256,
+        "normalized_unit": "m",
+        "availability": "AVAILABLE"
+      },
+      "inflow": {
+        "value": 17628,
+        "unit": "cusecs",
+        "normalized_value": 499.17937,
+        "normalized_unit": "m3/s",
+        "availability": "AVAILABLE"
+      },
+      "outflow": {
+        "value": 27613,
+        "unit": "cusecs",
+        "normalized_value": 781.91308,
+        "normalized_unit": "m3/s",
+        "availability": "AVAILABLE"
+      },
+      "storage": null,
+      "provenance": {
+        "source_agency": "Bhakra Beas Management Board (BBMB)",
+        "source_dataset": "BBMB Reservoir Daily Bulletin / NWIC BBMB Telemetry",
+        "source_url": "https://bbmb.gov.in/index.htm",
+        "observation_timestamp": "2026-09-23T18:00:00+05:30",
+        "observation_type": "OBSERVATION",
+        "retrieved_timestamp": "2026-09-24T00:00:00Z",
+        "original_value": 1642.2,
+        "original_unit": "ft",
+        "normalized_value": 500.54256,
+        "normalized_unit": "m",
+        "is_live": false,
+        "is_synthetic": false,
+        "source_type": "GOVERNMENT_STATIC_FIXTURE"
+      }
+    }
+  ],
+  "scenario_readiness": {
+    "DAM_BREAK": {
+      "status": "READY",
+      "reason": "Dam, reservoir, river, DEM provider, and initial water level are available."
+    },
+    "WATER_RELEASE": {
+      "status": "BLOCKED_NEEDS_TIME_SERIES",
+      "reason": "Requires release hydrograph time-series input. Single static observation is insufficient."
+    },
+    "RIVER_BLOCKAGE": {
+      "status": "READY_WITH_SINGLE_DISCHARGE",
+      "reason": "River, DEM, and steady-state outflow rate are available."
+    }
+  },
+  "source": {
+    "provider": "BBMB",
+    "source_agency": "Bhakra Beas Management Board (BBMB)",
+    "source_url": "https://bbmb.gov.in/index.htm",
+    "is_live": false,
+    "is_synthetic": false,
+    "source_type": "GOVERNMENT_STATIC_FIXTURE"
+  }
+}

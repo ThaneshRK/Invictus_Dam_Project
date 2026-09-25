@@ -53,4 +53,4 @@ async def test_create_simulation_job(async_client: AsyncClient):
     if res.status_code == 202:
         data = res.json()
         assert data["engine"] == "SPH"
-        assert data["status"] == "QUEUED"
+        assert data["status"] == "CREATED"

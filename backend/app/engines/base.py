@@ -7,8 +7,8 @@ class SimulationEngine(abc.ABC):
     Abstract base class for all flood simulation engines (e.g., SPH, Delft3D).
     """
 
-    def __init__(self, scenario_config: Dict[str, Any]):
-        self.config = scenario_config
+    def __init__(self, context: Any):
+        self.context = context
         self.simulation_id = str(uuid.uuid4())
         self.status = "PENDING"
         self.error_message = None

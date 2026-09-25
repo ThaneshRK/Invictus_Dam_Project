@@ -36,32 +36,45 @@ def test_sph_level_3_terrain():
     dem_path = "test_dem.tif"
     create_synthetic_dem(dem_path)
     
-    config = {
-        "metadata": {
-            "type": "DAM_BREAK",
-            "is_benchmark": False
-        },
-        "source_datasets": [
-            {
-                "dataset_type": "DEM",
-                "file_path": dem_path
-            }
-        ],
-        "physics_parameters": {
-            "particle_spacing": 2.0,
-            "smoothing_length": 4.0,
-            "initial_water_polygon": [90.0, 110.0, 180.0, 200.0], # Valley top
-            "initial_water_level": 30.0, # Will fill the valley up to Z=30
-            "failure_time": 0.0,
-            "formation_time": 0.1,
-            "final_breach_width": 20.0
-        },
-        "time_control": {
-            "duration_hours": 0.0005 # ~1.8 seconds simulation
-        }
-    }
+    import shapely.geometry
+    from geoalchemy2.shape import from_shape
     
-    engine = SPHEngine(config)
+    class MockContext:
+        class MockScenario:
+            class ScenarioType:
+                value = "DAM_BREAK"
+            scenario_type = ScenarioType()
+            simulation_duration = 0.0005
+            parameters = {
+                "particle_spacing": 2.0,
+                "smoothing_length": 4.0,
+                "initial_water_polygon": [90.0, 110.0, 180.0, 200.0],
+                "initial_water_level": 30.0,
+                "failure_time": 0.0,
+                "formation_time": 0.1,
+                "final_breach_width": 20.0
+            }
+        scenario = MockScenario()
+        
+        class MockDataset:
+            def __init__(self, metadata):
+                self.metadata = metadata
+        dem = MockDataset({"file_path": dem_path})
+        hydrology = None
+        
+        class MockGeom:
+            def __init__(self, x, y):
+                self.geometry = from_shape(shapely.geometry.Point(x, y))
+                
+        class MockReservoir:
+            def __init__(self, minx, miny, maxx, maxy):
+                self.geometry = from_shape(shapely.geometry.box(minx, miny, maxx, maxy))
+                
+        dam = MockGeom(100.0, 100.0)
+        river = MockGeom(100.0, 100.0)
+        reservoir = MockReservoir(90.0, 180.0, 110.0, 200.0)
+        
+    engine = SPHEngine(MockContext())
     assert engine.validate()
     engine.prepare()
     assert engine.status == "PREPARED"

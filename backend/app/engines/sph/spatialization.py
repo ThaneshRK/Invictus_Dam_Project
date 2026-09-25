@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.stats import binned_statistic_2d
 from app.engines.sph.particle import ParticleState
 
 class ParticleToGridInterpolator:
@@ -45,26 +46,40 @@ class ParticleToGridInterpolator:
         x = pos[:, 0]
         y = pos[:, 1]
         
-        h_depth = state.h_depth[fluid_idx]
-        z_b = state.z_b[fluid_idx]
-        eta = h_depth + z_b
-        
         u = state.vel[fluid_idx, 0]
         v = state.vel[fluid_idx, 1]
         vel_mag = np.linalg.norm(state.vel[fluid_idx], axis=1)
         
         # Spatial Binning
-        count, _, _ = np.histogram2d(y, x, bins=[self.ybins, self.xbins])
-        
-        valid_mask = count > 0
-        
-        sum_h, _, _ = np.histogram2d(y, x, bins=[self.ybins, self.xbins], weights=h_depth)
-        avg_h = np.full((self.ny, self.nx), self.nodata, dtype=np.float64)
-        avg_h[valid_mask] = sum_h[valid_mask] / count[valid_mask]
-        
-        sum_eta, _, _ = np.histogram2d(y, x, bins=[self.ybins, self.xbins], weights=eta)
-        avg_eta = np.full((self.ny, self.nx), self.nodata, dtype=np.float64)
-        avg_eta[valid_mask] = sum_eta[valid_mask] / count[valid_mask]
+        if state.dim == 3:
+            z = state.pos[fluid_idx, 2]
+            max_z, _, _, _ = binned_statistic_2d(y, x, z, statistic='max', bins=[self.ybins, self.xbins])
+            mean_zb, _, _, _ = binned_statistic_2d(y, x, state.z_b[fluid_idx], statistic='mean', bins=[self.ybins, self.xbins])
+            
+            valid_mask = ~np.isnan(max_z)
+            avg_h = np.full((self.ny, self.nx), self.nodata, dtype=np.float64)
+            avg_h[valid_mask] = max_z[valid_mask] - mean_zb[valid_mask]
+            
+            avg_eta = np.full((self.ny, self.nx), self.nodata, dtype=np.float64)
+            avg_eta[valid_mask] = max_z[valid_mask]
+            
+            count, _, _ = np.histogram2d(y, x, bins=[self.ybins, self.xbins])
+            # Ensure valid_mask aligns with count > 0 for velocity
+        else:
+            h_depth = state.h_depth[fluid_idx]
+            z_b = state.z_b[fluid_idx]
+            eta = h_depth + z_b
+            
+            count, _, _ = np.histogram2d(y, x, bins=[self.ybins, self.xbins])
+            valid_mask = count > 0
+            
+            sum_h, _, _ = np.histogram2d(y, x, bins=[self.ybins, self.xbins], weights=h_depth)
+            avg_h = np.full((self.ny, self.nx), self.nodata, dtype=np.float64)
+            avg_h[valid_mask] = sum_h[valid_mask] / count[valid_mask]
+            
+            sum_eta, _, _ = np.histogram2d(y, x, bins=[self.ybins, self.xbins], weights=eta)
+            avg_eta = np.full((self.ny, self.nx), self.nodata, dtype=np.float64)
+            avg_eta[valid_mask] = sum_eta[valid_mask] / count[valid_mask]
         
         sum_u, _, _ = np.histogram2d(y, x, bins=[self.ybins, self.xbins], weights=u)
         avg_u = np.full((self.ny, self.nx), self.nodata, dtype=np.float64)

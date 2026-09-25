@@ -39,17 +39,26 @@ class InundationService:
             mean_depth = 0.0
             inundated_area_km2 = 0.0
 
+        max_velocity = float(engine_results.get("max_velocity_ms", 0.0))
+        
+        output_paths = {
+            "inundation_extent": engine_results.get("inundation_extent_path", "/data/outputs/extent.tif"),
+            "water_depth": engine_results.get("water_depth_path", "/data/outputs/depth.tif"),
+            "velocity_magnitude": engine_results.get("velocity_magnitude_path", "/data/outputs/velocity.tif"),
+            "arrival_time": engine_results.get("arrival_time_path", "/data/outputs/arrival.tif"),
+            "polygons": engine_results.get("polygons_path", "/data/outputs/polygons.geojson")
+        }
+        if "inundation_polygon" in engine_results and engine_results["inundation_polygon"]:
+            output_paths["inundation_polygon"] = engine_results["inundation_polygon"]
+
         return {
             "stats": {
                 "max_depth_m": max_depth,
                 "mean_depth_m": mean_depth,
+                "max_velocity_ms": max_velocity,
                 "inundated_area_km2": inundated_area_km2
             },
-            "output_paths": {
-                "flood_extent": "/data/outputs/extent.tif",
-                "max_depth": "/data/outputs/depth.tif",
-                "polygons": "/data/outputs/polygons.geojson"
-            }
+            "output_paths": output_paths
         }
 
     @staticmethod
@@ -64,7 +73,8 @@ class InundationService:
             outputs=processed_results.get("output_paths", {}),
             inundated_area_km2=stats.get("inundated_area_km2"),
             max_depth_m=stats.get("max_depth_m"),
-            mean_depth_m=stats.get("mean_depth_m")
+            mean_depth_m=stats.get("mean_depth_m"),
+            max_velocity_ms=stats.get("max_velocity_ms")
         )
         db.add(result)
         await db.commit()

@@ -1,0 +1,21 @@
+{
+  "id": "stanley_reservoir",
+  "reservoir_name": "Stanley Reservoir",
+  "dam_id": "mettur",
+  "dam_name": "Mettur Dam",
+  "river_name": "Cauvery",
+  "state": "Tamil Nadu",
+  "gross_capacity_mcm": 2710.0,
+  "live_capacity_mcm": 2650.0,
+  "surface_area_sqkm": 153.46,
+  "full_reservoir_level_m": 240.79,
+  "source": {
+    "source_type": "GOVERNMENT_STATIC_FIXTURE",
+    "is_live": false,
+    "is_synthetic": false,
+    "provider": "TNWRD",
+    "source_agency": "Tamil Nadu Water Resources Department",
+    "source_url": "https://www.cwc.gov.in/sites/default/files/nrld-2019.pdf",
+    "acquired_at": "2026-09-24"
+  }
+}

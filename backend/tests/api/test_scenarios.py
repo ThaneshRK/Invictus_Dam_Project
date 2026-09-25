@@ -77,4 +77,4 @@ async def test_validate_scenario_missing_datasets(async_client: AsyncClient):
     val_res = await async_client.post(f"/api/v1/scenarios/{scenario_id}/validate")
     # Should fail because source_datasets is missing/empty
     assert val_res.status_code == 400
-    assert "Missing required datasets" in val_res.json()["detail"]
+    assert "Project missing selected dam" in val_res.json()["detail"]

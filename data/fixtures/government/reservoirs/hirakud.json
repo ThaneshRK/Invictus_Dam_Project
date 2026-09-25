@@ -1,0 +1,21 @@
+{
+  "id": "hirakud_reservoir",
+  "reservoir_name": "Hirakud Reservoir",
+  "dam_id": "hirakud",
+  "dam_name": "Hirakud Dam",
+  "river_name": "Mahanadi",
+  "state": "Odisha",
+  "gross_capacity_mcm": 8136.0,
+  "live_capacity_mcm": 5818.0,
+  "surface_area_sqkm": 743.0,
+  "full_reservoir_level_m": 192.02,
+  "source": {
+    "source_type": "GOVERNMENT_STATIC_FIXTURE",
+    "is_live": false,
+    "is_synthetic": false,
+    "provider": "CWC / CEA",
+    "source_agency": "Central Electricity Authority / CWC",
+    "source_url": "https://www.cwc.gov.in/sites/default/files/nrld-2019.pdf",
+    "acquired_at": "2026-09-24"
+  }
+}

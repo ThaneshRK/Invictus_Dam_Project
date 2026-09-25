@@ -22,14 +22,18 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: flood_backend
+    env_file:
+      - ./backend/.env
     environment:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-flood_db}
       - POSTGRES_SERVER=db
       - DELFT3D_HOME=/opt/delft3d
+      - OPENTOPOGRAPHY_API_KEY=${OPENTOPOGRAPHY_API_KEY:-}
     ports:
       - "8000:8000"
     volumes:
       - ./backend:/app
+      - ./data:/app/data
       - /tmp:/tmp
       - ~/.config/earthengine:/root/.config/earthengine
     depends_on:

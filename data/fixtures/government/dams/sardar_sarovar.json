@@ -1,0 +1,27 @@
+{
+  "id": "sardar_sarovar",
+  "dam_name": "Sardar Sarovar Dam",
+  "reservoir_name": "Sardar Sarovar Reservoir",
+  "river_name": "Narmada",
+  "state": "Gujarat",
+  "country": "India",
+  "latitude": 21.8322,
+  "longitude": 73.7483,
+  "completion_year": 2017,
+  "dam_height_m": 163.0,
+  "dam_length_m": 1210.0,
+  "gross_storage_bcm": 9.50,
+  "effective_storage_bcm": 5.80,
+  "reservoir_area_sqkm": 375.0,
+  "operator": "Sardar Sarovar Narmada Nigam Limited (SSNNL)",
+  "source": {
+    "source_type": "OPERATOR_STATIC_FIXTURE",
+    "is_live": false,
+    "is_synthetic": false,
+    "provider": "SSNNL",
+    "source_agency": "Sardar Sarovar Narmada Nigam Limited / CWC",
+    "source_url": "https://demo.ssnnl.in/",
+    "source_dataset": "SSNNL Portal / CWC NRLD 2019",
+    "acquired_at": "2026-09-24"
+  }
+}

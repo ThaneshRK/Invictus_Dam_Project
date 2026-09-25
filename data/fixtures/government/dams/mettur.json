@@ -1,0 +1,27 @@
+{
+  "id": "mettur",
+  "dam_name": "Mettur Dam",
+  "reservoir_name": "Stanley Reservoir",
+  "river_name": "Cauvery",
+  "state": "Tamil Nadu",
+  "country": "India",
+  "latitude": 11.8016,
+  "longitude": 77.8018,
+  "completion_year": 1934,
+  "dam_height_m": 65.23,
+  "dam_length_m": 1615.40,
+  "gross_storage_bcm": 2.71,
+  "effective_storage_bcm": 2.65,
+  "reservoir_area_sqkm": 153.46,
+  "operator": "Tamil Nadu Water Resources Department (TNWRD)",
+  "source": {
+    "source_type": "GOVERNMENT_STATIC_FIXTURE",
+    "is_live": false,
+    "is_synthetic": false,
+    "provider": "TNWRD",
+    "source_agency": "Tamil Nadu Water Resources Department / CWC",
+    "source_url": "https://www.cwc.gov.in/sites/default/files/nrld-2019.pdf",
+    "source_dataset": "TNWRD / CWC NRLD 2019 / NWIC River Discharge",
+    "acquired_at": "2026-09-24"
+  }
+}

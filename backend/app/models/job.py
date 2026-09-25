@@ -7,12 +7,22 @@ from sqlalchemy.dialects.postgresql import UUID, JSONB
 from app.db.base_class import Base
 
 class JobStatus(str, enum.Enum):
-    QUEUED = "QUEUED"
+    CREATED = "CREATED"
+    VALIDATING = "VALIDATING"
+    VALIDATED = "VALIDATED"
     PREPARING = "PREPARING"
     RUNNING = "RUNNING"
+    PARSING = "PARSING"
+    VALIDATING_OUTPUT = "VALIDATING_OUTPUT"
     COMPLETED = "COMPLETED"
-    FAILED = "FAILED"
+    VALIDATION_FAILED = "VALIDATION_FAILED"
+    PREPARATION_FAILED = "PREPARATION_FAILED"
+    EXECUTION_FAILED = "EXECUTION_FAILED"
+    OUTPUT_FAILED = "OUTPUT_FAILED"
     CANCELLED = "CANCELLED"
+    # Legacy states mapped to new ones where appropriate to avoid DB crash if not migrated immediately
+    QUEUED = "CREATED"
+    FAILED = "EXECUTION_FAILED"
 
 class SimulationJob(Base):
     """Unified background simulation job tracker"""
@@ -33,6 +43,9 @@ class SimulationJob(Base):
     
     # Store references to output results if completed
     result_references: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    
+    # Snapshot of the inputs used
+    input_snapshot: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     
     start_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     end_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

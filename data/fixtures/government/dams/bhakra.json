@@ -1,0 +1,27 @@
+{
+  "id": "bhakra",
+  "dam_name": "Bhakra Dam",
+  "reservoir_name": "Gobind Sagar",
+  "river_name": "Sutlej",
+  "state": "Himachal Pradesh",
+  "country": "India",
+  "latitude": 31.4114,
+  "longitude": 76.4333,
+  "completion_year": 1963,
+  "dam_height_m": 225.55,
+  "dam_length_m": 518.16,
+  "gross_storage_bcm": 9.621,
+  "effective_storage_bcm": 7.191,
+  "reservoir_area_sqkm": 168.35,
+  "operator": "Bhakra Beas Management Board (BBMB)",
+  "source": {
+    "source_type": "GOVERNMENT_STATIC_FIXTURE",
+    "is_live": false,
+    "is_synthetic": false,
+    "provider": "BBMB",
+    "source_agency": "Bhakra Beas Management Board (BBMB) / CWC",
+    "source_url": "https://bbmb.gov.in/index.htm",
+    "source_dataset": "CWC NRLD 2019 / BBMB Daily Bulletin",
+    "acquired_at": "2026-09-24"
+  }
+}

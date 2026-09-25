@@ -27,7 +27,8 @@ const Sidebar: React.FC = () => {
         { name: "Projects", path: "/projects", icon: <FolderGit2 size={18} /> },
         { name: "Datasets", path: "/data", icon: <Database size={18} /> },
         { name: "Scenarios", path: "/scenarios", icon: <Layers size={18} /> },
-        { name: "Simulations", path: "/jobs", icon: <Activity size={18} /> }
+        { name: "Simulations", path: "/jobs", icon: <Activity size={18} /> },
+        { name: "3D Asset Alignment", path: "/assets/align", icon: <Cuboid size={18} /> }
       ]
     },
     {

@@ -3,11 +3,20 @@ from app.engines.delft3d.engine import Delft3DEngine
 from app.engines.delft3d.executor import HostDelft3DExecutor
 
 def test_delft3d_validation():
-    config = {
-        "scenario_type": "DAM_BREAK",
-        "time_control": {"duration_hours": 1.0, "timestep_seconds": 60.0}
-    }
-    engine = Delft3DEngine(config)
+    class MockScenario:
+        class ScenarioType:
+            value = "DAM_BREAK"
+        scenario_type = ScenarioType()
+        simulation_duration = 1.0
+        timestep = 60.0
+        parameters = {}
+
+    class MockContext:
+        scenario = MockScenario()
+        dem = None
+        hydrology = None
+
+    engine = Delft3DEngine(MockContext())
     assert engine.validate() == True
 
 def test_delft3d_executor_check():

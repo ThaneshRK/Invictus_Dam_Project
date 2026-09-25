@@ -8,21 +8,23 @@ class ParticleType:
 class ParticleState:
     """
     Holds the physical state of all particles in the SPH simulation using efficient NumPy arrays.
+    Supports both 2D and 3D.
     """
-    def __init__(self, max_particles: int):
+    def __init__(self, max_particles: int, dim: int = 2):
         self.max_particles = max_particles
         self.num_particles = 0
+        self.dim = dim
         
         # Core physical properties
-        self.pos = np.zeros((max_particles, 2), dtype=np.float64)
-        self.vel = np.zeros((max_particles, 2), dtype=np.float64)
-        self.acc = np.zeros((max_particles, 2), dtype=np.float64)
+        self.pos = np.zeros((max_particles, dim), dtype=np.float64)
+        self.vel = np.zeros((max_particles, dim), dtype=np.float64)
+        self.acc = np.zeros((max_particles, dim), dtype=np.float64)
         
         self.mass = np.zeros(max_particles, dtype=np.float64)
         self.rho = np.zeros(max_particles, dtype=np.float64)
         self.press = np.zeros(max_particles, dtype=np.float64)
         
-        # SWE-SPH specific variables
+        # SWE-SPH specific variables (for 2D)
         self.h_depth = np.zeros(max_particles, dtype=np.float64) # water depth h
         self.z_b = np.zeros(max_particles, dtype=np.float64)     # bed elevation
         
@@ -59,3 +61,4 @@ class ParticleState:
 
     def get_boundary_indices(self) -> np.ndarray:
         return np.where((self.type[:self.num_particles] == ParticleType.BOUNDARY) & self.active[:self.num_particles])[0]
+

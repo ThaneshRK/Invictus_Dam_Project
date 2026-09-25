@@ -8,11 +8,13 @@ class CubicSplineKernel:
         self.h = h
         self.dim = dim
         
-        # Normalization factor for 2D
+        # Normalization factor
         if self.dim == 2:
-            self.alpha = 10.0 / (7.0 * np.pi * h**2)
+            self.alpha = 10.0 / (7.0 * np.pi * (h**2))
+        elif self.dim == 3:
+            self.alpha = 1.0 / (np.pi * (h**3))
         else:
-            raise NotImplementedError("Only 2D cubic spline kernel is implemented.")
+            raise NotImplementedError("Only 2D and 3D cubic spline kernels are implemented.")
             
     def W(self, r: np.ndarray) -> np.ndarray:
         """

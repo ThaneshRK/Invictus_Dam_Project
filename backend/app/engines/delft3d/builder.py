@@ -24,12 +24,33 @@ logger = logging.getLogger(__name__)
 class Delft3DModelBuilder:
     """Builds the simulation workspace and configuration for D-Flow FM."""
 
-    def __init__(self, workspace_root: str, simulation_id: str, config: Dict[str, Any]):
+    def __init__(self, workspace_root: str, simulation_id: str, context: Any):
         self.workspace_root = workspace_root
         self.simulation_id = simulation_id
-        self.config = config
+        self.context = context
+        self.params = self.context.scenario.parameters or {}
         self.workspace_path = os.path.join(self.workspace_root, f"job_{self.simulation_id}")
         self.metadata = {}
+        
+        from geoalchemy2.shape import to_shape
+        import rasterio
+        
+        # Determine bounds from study_area or DEM
+        self.bounds = [0.0, 0.0, 1000.0, 1000.0]
+        dem_path = None
+        if self.context.dem:
+            dem_path = getattr(self.context.dem, "file_path", None)
+            if not dem_path and getattr(self.context.dem, "metadata_", None) and isinstance(self.context.dem.metadata_, dict):
+                dem_path = self.context.dem.metadata_.get("file_path")
+
+        if dem_path and os.path.exists(dem_path):
+            with rasterio.open(dem_path) as src:
+                self.bounds = [src.bounds.left, src.bounds.bottom, src.bounds.right, src.bounds.top]
+        elif hasattr(self.context, 'study_area') and self.context.study_area:
+            from geoalchemy2.shape import to_shape
+            study_geom = to_shape(self.context.study_area)
+            b = study_geom.bounds
+            self.bounds = [b[0], b[1], b[2], b[3]]
 
     def prepare_workspace(self) -> None:
         """Creates the necessary directory structure."""
@@ -38,30 +59,31 @@ class Delft3DModelBuilder:
             os.makedirs(os.path.join(self.workspace_path, d), exist_ok=True)
 
     def _get_scenario_type(self) -> str:
-        """Extracts the scenario type from config."""
-        raw = self.config.get("scenario_type", "")
-        if not raw:
-            raw = self.config.get("metadata", {}).get("type", "DAM_BREAK")
-        return raw.upper().replace("CONTROLLED_RELEASE", "WATER_RELEASE")
+        """Extracts the scenario type from context."""
+        st = self.context.scenario.scenario_type
+        scen_str = st.value if hasattr(st, 'value') else str(st)
+        return scen_str.upper().replace("CONTROLLED_RELEASE", "WATER_RELEASE")
 
     def _get_bounds(self) -> tuple:
         """Gets simulation domain bounds."""
-        b = self.config.get("bounds", [0.0, 0.0, 1000.0, 1000.0])
-        return tuple(b)
+        return tuple(self.bounds)
 
     def _get_physics_params(self) -> dict:
-        """Gets physics parameters from config."""
-        return self.config.get("physics_parameters", self.config.get("parameters", {}))
+        """Gets physics parameters from context."""
+        return self.params
 
     def _get_time_params(self) -> dict:
         """Gets time control parameters."""
-        return self.config.get("time_control", {})
+        return {
+            "duration_hours": self.context.scenario.simulation_duration,
+            "timestep_seconds": self.context.scenario.timestep
+        }
 
     def _build_mesh(self) -> str:
         """Generates the computational mesh and returns relative path."""
         mg = Delft3DMeshGenerator(os.path.join(self.workspace_path, "mesh"))
         bounds = self._get_bounds()
-        resolution = self.config.get("mesh_resolution", 50.0)
+        resolution = self.params.get("mesh_resolution", 50.0)
 
         mesh_abs = mg.generate_rectangular_mesh(bounds, resolution=resolution)
         rel_path = os.path.relpath(mesh_abs, self.workspace_path)
@@ -75,19 +97,20 @@ class Delft3DModelBuilder:
 
     def _build_terrain(self) -> str:
         """Samples DEM and generates .xyz bathymetry file. Returns relative path or empty string."""
-        source_datasets = self.config.get("source_datasets", [])
-        dem_info = None
-        if isinstance(source_datasets, list):
-            dem_info = next((ds for ds in source_datasets if isinstance(ds, dict) and ds.get("dataset_type") == "DEM"), None)
+        dem_file_path = None
+        if self.context.dem:
+            dem_file_path = getattr(self.context.dem, "file_path", None)
+            if not dem_file_path and getattr(self.context.dem, "metadata_", None) and isinstance(self.context.dem.metadata_, dict):
+                dem_file_path = self.context.dem.metadata_.get("file_path")
 
-        if dem_info and dem_info.get("file_path") and os.path.exists(dem_info["file_path"]):
+        if dem_file_path and os.path.exists(dem_file_path):
             ts = Delft3DTerrainSampler(self.workspace_path)
             bounds = self._get_bounds()
-            xyz_path = ts.generate_xyz_bathymetry(dem_info["file_path"], bounds)
+            xyz_path = ts.generate_xyz_bathymetry(dem_file_path, bounds)
             rel_path = os.path.relpath(xyz_path, self.workspace_path)
 
             self.metadata["terrain"] = {
-                "source": dem_info["file_path"],
+                "source": dem_file_path,
                 "format": "xyz",
                 "file": rel_path
             }
@@ -101,10 +124,11 @@ class Delft3DModelBuilder:
         bounds = self._get_bounds()
         xmin, ymin, xmax, ymax = bounds
 
-        # Dam location: configurable, defaults to 1/3 from upstream
-        dam_x = params.get("dam_x", xmin + (xmax - xmin) * 0.33)
-        dam_y_min = params.get("dam_y_min", ymin)
-        dam_y_max = params.get("dam_y_max", ymax)
+        from geoalchemy2.shape import to_shape
+        dam_geom = to_shape(self.context.dam.geometry)
+        dam_x = dam_geom.x
+        dam_y_min = dam_geom.y - 100.0
+        dam_y_max = dam_geom.y + 100.0
 
         # Dam polyline (across the domain)
         dam_polyline = [
@@ -169,10 +193,11 @@ class Delft3DModelBuilder:
         bounds = self._get_bounds()
         xmin, ymin, xmax, ymax = bounds
 
-        # Release location: configurable, defaults to upstream boundary
-        release_x = params.get("release_x", xmin)
-        release_y_min = params.get("release_y_min", ymin + (ymax - ymin) * 0.3)
-        release_y_max = params.get("release_y_max", ymin + (ymax - ymin) * 0.7)
+        from geoalchemy2.shape import to_shape
+        res_geom = to_shape(self.context.reservoir.geometry)
+        release_x = res_geom.bounds[2]  # Max X of reservoir roughly
+        release_y_min = res_geom.bounds[1]
+        release_y_max = res_geom.bounds[3]
 
         bnd_coords = [
             (release_x, release_y_min),
@@ -249,8 +274,11 @@ class Delft3DModelBuilder:
         bounds = self._get_bounds()
         xmin, ymin, xmax, ymax = bounds
 
-        # Blockage location
-        blockage_x = params.get("blockage_x", xmin + (xmax - xmin) * 0.5)
+        from geoalchemy2.shape import to_shape
+        river_geom = to_shape(self.context.river.geometry)
+        
+        # Use river bounds or representative point for blockage
+        blockage_x = river_geom.centroid.x
         blockage_width = params.get("blockage_width", 50.0)
         blockage_height = params.get("blockage_height", 15.0)
 
@@ -341,7 +369,7 @@ class Delft3DModelBuilder:
         time_params = self._get_time_params()
         duration_hours = time_params.get("duration_hours", 1.0)
         dt_user = time_params.get("timestep_seconds", 30.0)
-        output_interval = self.config.get("output_interval", 600)
+        output_interval = self.context.scenario.output_interval or 600
 
         mdu_config = {
             "General": {
@@ -458,10 +486,7 @@ class Delft3DModelBuilder:
         self.metadata["simulation_id"] = self.simulation_id
         self.metadata["delft3d_version"] = "D-Flow FM 1.2.184"
         self.metadata["physical_model"] = "2D depth-averaged shallow water equations (Kmx=0)"
-        self.metadata["config"] = {
-            k: v for k, v in self.config.items()
-            if k not in ("source_datasets",)  # Exclude large blobs
-        }
+        self.metadata["config"] = self.params
 
         with open(meta_path, "w") as f:
             json.dump(self.metadata, f, indent=2, default=str)

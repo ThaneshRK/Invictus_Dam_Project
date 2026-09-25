@@ -1,0 +1,14 @@
+{
+  "river_id": "mahanadi",
+  "river_name": "Mahanadi",
+  "associated_dam_id": "hirakud",
+  "basin": "Mahanadi Basin",
+  "state": "Odisha",
+  "source": {
+    "source_type": "GOVERNMENT_STATIC_FIXTURE",
+    "is_live": false,
+    "is_synthetic": false,
+    "provider": "CWC NRLD",
+    "source_url": "https://www.cwc.gov.in/sites/default/files/nrld-2019.pdf"
+  }
+}

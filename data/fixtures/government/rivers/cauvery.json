@@ -1,0 +1,14 @@
+{
+  "river_id": "cauvery",
+  "river_name": "Cauvery",
+  "associated_dam_id": "mettur",
+  "basin": "Cauvery Basin",
+  "state": "Tamil Nadu",
+  "source": {
+    "source_type": "GOVERNMENT_STATIC_FIXTURE",
+    "is_live": false,
+    "is_synthetic": false,
+    "provider": "TNWRD / NWIC",
+    "source_url": "https://nwdp.nwic.gov.in/en/dataset/river-discharge-manual-dailly-tamil-nadu-surface-water-groundwater-department"
+  }
+}

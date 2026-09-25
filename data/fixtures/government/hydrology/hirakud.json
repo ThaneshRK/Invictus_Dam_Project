@@ -1,0 +1,78 @@
+{
+  "dam_id": "hirakud",
+  "dam_name": "Hirakud Dam",
+  "reservoir_name": "Hirakud Reservoir",
+  "river_name": "Mahanadi",
+  "observations": [
+    {
+      "timestamp": "2025-08-01T00:00:00+05:30",
+      "observation_date": "2025-08-01",
+      "observation_type": "HISTORICAL_REFERENCE",
+      "status": "Historical Reference",
+      "water_level": {
+        "value": 187.28,
+        "unit": "m",
+        "normalized_value": 187.28,
+        "normalized_unit": "m",
+        "availability": "AVAILABLE"
+      },
+      "full_reservoir_level": {
+        "value": 192.02,
+        "unit": "m",
+        "normalized_value": 192.02,
+        "normalized_unit": "m",
+        "availability": "AVAILABLE"
+      },
+      "inflow": null,
+      "inflow_availability": "NOT_PROVIDED",
+      "outflow": null,
+      "outflow_availability": "NOT_PROVIDED",
+      "storage": {
+        "value": 372.28,
+        "unit": "MCM",
+        "normalized_value": 372280000.0,
+        "normalized_unit": "m3",
+        "availability": "AVAILABLE"
+      },
+      "annual_design_potential_energy_mu": 1174.0,
+      "energy_content_present_level_mu": 148.84,
+      "provenance": {
+        "source_agency": "Central Electricity Authority (CEA) / CWC",
+        "source_dataset": "Operation Performance Monitoring Division Hydro Reservoir Report",
+        "source_url": "https://www.cwc.gov.in/sites/default/files/nrld-2019.pdf",
+        "observation_timestamp": "2025-08-01T00:00:00+05:30",
+        "observation_type": "HISTORICAL_REFERENCE",
+        "retrieved_timestamp": "2026-09-24T00:00:00Z",
+        "original_value": 187.28,
+        "original_unit": "m",
+        "normalized_value": 187.28,
+        "normalized_unit": "m",
+        "is_live": false,
+        "is_synthetic": false,
+        "source_type": "GOVERNMENT_STATIC_FIXTURE"
+      }
+    }
+  ],
+  "scenario_readiness": {
+    "DAM_BREAK": {
+      "status": "READY",
+      "reason": "Dam, reservoir, river, DEM provider, and reference water level are available."
+    },
+    "WATER_RELEASE": {
+      "status": "BLOCKED_NEEDS_TIME_SERIES",
+      "reason": "Requires release hydrograph time-series input. Outflow discharge is NOT_PROVIDED."
+    },
+    "RIVER_BLOCKAGE": {
+      "status": "BLOCKED_NEEDS_DISCHARGE",
+      "reason": "Requires discharge time series or outflow observation. Outflow discharge is NOT_PROVIDED."
+    }
+  },
+  "source": {
+    "provider": "CWC / CEA",
+    "source_agency": "Central Electricity Authority (CEA)",
+    "source_url": "https://www.cwc.gov.in/sites/default/files/nrld-2019.pdf",
+    "is_live": false,
+    "is_synthetic": false,
+    "source_type": "GOVERNMENT_STATIC_FIXTURE"
+  }
+}

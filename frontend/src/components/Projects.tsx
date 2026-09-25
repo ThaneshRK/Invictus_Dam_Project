@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FolderGit2, Plus, Play } from 'lucide-react';
+import { FolderGit2, Plus, Play, Trash2 } from 'lucide-react';
+import api from '../api';
 import { useProject } from '../context/ProjectContext';
 
 const Projects: React.FC = () => {
@@ -54,6 +55,23 @@ const Projects: React.FC = () => {
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <button className="btn-secondary" style={{ padding: '4px 8px', fontSize: '12px' }} onClick={() => { setActiveProject(p); navigate('/scenarios'); }}>
                       <Play size={14} /> Select & Run
+                    </button>
+                    <button
+                      className="btn-secondary"
+                      style={{ padding: '4px 8px', fontSize: '12px', color: '#ef4444', borderColor: '#fecaca' }}
+                      onClick={async () => {
+                        if (!window.confirm(`Delete project "${p.name}"? This cannot be undone.`)) return;
+                        try {
+                          await api.delete(`/projects/${p.id}`);
+                          if (activeProject?.id === p.id) setActiveProject(null);
+                          fetchProjects();
+                        } catch (e) {
+                          console.error(e);
+                          alert('Failed to delete project.');
+                        }
+                      }}
+                    >
+                      <Trash2 size={14} /> Delete
                     </button>
                   </div>
                 </td>

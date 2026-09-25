@@ -1,0 +1,77 @@
+{
+  "dam_id": "sardar_sarovar",
+  "dam_name": "Sardar Sarovar Dam",
+  "reservoir_name": "Sardar Sarovar Reservoir",
+  "river_name": "Narmada",
+  "observations": [
+    {
+      "timestamp": "2025-08-01T00:00:00+05:30",
+      "observation_date": "2025-08-01",
+      "observation_type": "HISTORICAL_REFERENCE",
+      "status": "Historical Reference",
+      "water_level": {
+        "value": 132.50,
+        "unit": "m",
+        "normalized_value": 132.50,
+        "normalized_unit": "m",
+        "availability": "AVAILABLE"
+      },
+      "full_reservoir_level": {
+        "value": 138.68,
+        "unit": "m",
+        "normalized_value": 138.68,
+        "normalized_unit": "m",
+        "availability": "AVAILABLE"
+      },
+      "inflow": null,
+      "inflow_availability": "NOT_PROVIDED",
+      "outflow": null,
+      "outflow_availability": "NOT_PROVIDED",
+      "storage": {
+        "value": 1817.55,
+        "unit": "MCM",
+        "normalized_value": 1817550000.0,
+        "normalized_unit": "m3",
+        "availability": "AVAILABLE"
+      },
+      "energy_content_present_level_mu": 1117.99,
+      "provenance": {
+        "source_agency": "Sardar Sarovar Narmada Nigam Limited (SSNNL) / CWC / CEA",
+        "source_dataset": "SSNNL Portal / CEA Hydro Reservoir Report",
+        "source_url": "https://demo.ssnnl.in/",
+        "observation_timestamp": "2025-08-01T00:00:00+05:30",
+        "observation_type": "HISTORICAL_REFERENCE",
+        "retrieved_timestamp": "2026-09-24T00:00:00Z",
+        "original_value": 132.50,
+        "original_unit": "m",
+        "normalized_value": 132.50,
+        "normalized_unit": "m",
+        "is_live": false,
+        "is_synthetic": false,
+        "source_type": "GOVERNMENT_STATIC_FIXTURE"
+      }
+    }
+  ],
+  "scenario_readiness": {
+    "DAM_BREAK": {
+      "status": "READY",
+      "reason": "Dam, reservoir, river, DEM provider, and reference water level are available."
+    },
+    "WATER_RELEASE": {
+      "status": "BLOCKED_NEEDS_TIME_SERIES",
+      "reason": "Requires release hydrograph time-series input. Outflow discharge is NOT_PROVIDED."
+    },
+    "RIVER_BLOCKAGE": {
+      "status": "BLOCKED_NEEDS_DISCHARGE",
+      "reason": "Requires discharge time series or outflow observation. Outflow discharge is NOT_PROVIDED."
+    }
+  },
+  "source": {
+    "provider": "SSNNL / CWC / CEA",
+    "source_agency": "SSNNL / CEA",
+    "source_url": "https://demo.ssnnl.in/",
+    "is_live": false,
+    "is_synthetic": false,
+    "source_type": "GOVERNMENT_STATIC_FIXTURE"
+  }
+}

@@ -14,3 +14,4 @@ from app.models.government import (
     GovernmentDataset, GovernmentDam, GovernmentReservoir, GovernmentRiver,
     GovernmentRiverPolygon, DamRelationship
 )
+from app.models.asset import Dam3DAsset

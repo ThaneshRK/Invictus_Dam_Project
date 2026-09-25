@@ -18,7 +18,7 @@ async def check_db():
 def mock_csv_file(tmp_path):
     file_path = tmp_path / "test.csv"
     with open(file_path, "w") as f:
-        f.write("id,latitude,longitude,value\n1,10.0,20.0,100")
+        f.write("timestamp,value\n0.0,100.0\n1.0,200.0")
     return file_path
 
 @pytest.mark.asyncio
@@ -57,8 +57,10 @@ async def test_dataset_upload_csv(async_client: AsyncClient, mock_csv_file):
             files={"file": ("test.csv", f, "text/csv")}
         )
         
+    if response.status_code != 201:
+        print("CSV UPLOAD ERROR:", response.text)
     assert response.status_code == 201
     data = response.json()
     assert data["format"] == "CSV"
-    assert data["crs"] == "EPSG:4326"
+    assert data["crs"] is None
     assert "rows" in data["metadata_"]

@@ -24,7 +24,7 @@ async def upload_dataset(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    file_path, metadata = await DatasetService.process_upload(project_id, file)
+    file_path, metadata = await DatasetService.process_upload(project_id, file, dataset_type.value)
     
     dataset = Dataset(
         project_id=project_id,

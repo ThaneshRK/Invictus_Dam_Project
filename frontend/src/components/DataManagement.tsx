@@ -11,7 +11,7 @@ const DataManagement: React.FC = () => {
   const [govDatasets, setGovDatasets] = useState<any[]>([]);
   const [govDams, setGovDams] = useState<any[]>([]);
   const [name, setName] = useState('');
-  const [datasetType, setDatasetType] = useState('ELEVATION');
+  const [datasetType, setDatasetType] = useState('DEM');
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -25,12 +25,16 @@ const DataManagement: React.FC = () => {
     }
   };
 
+  const [fixtures, setFixtures] = useState<any[]>([]);
+
   const fetchGovData = async () => {
     try {
       const resDs = await api.get('/government/datasets');
       setGovDatasets(resDs.data.datasets || []);
       const resDams = await api.get('/government/dams?limit=10');
       setGovDams(resDams.data.dams || []);
+      const resFix = await api.get('/government/fixtures');
+      setFixtures(resFix.data.systems || []);
     } catch (e) {
       console.error("Failed to fetch gov data", e);
     }
@@ -85,10 +89,11 @@ const DataManagement: React.FC = () => {
           <div className="form-group" style={{ marginTop: '12px' }}>
             <label className="form-label">Dataset Type</label>
             <select className="form-select" value={datasetType} onChange={e => setDatasetType(e.target.value)}>
-              <option value="ELEVATION">Digital Elevation Model (Raster)</option>
-              <option value="INFRASTRUCTURE">Dam Infrastructure (Vector)</option>
-              <option value="LAND_COVER">Land Cover (Raster/Vector)</option>
-              <option value="HYDROLOGY">River Geometry (Vector)</option>
+              <option value="DEM">Digital Elevation Model (Raster)</option>
+              <option value="dam">Dam Infrastructure (Vector)</option>
+              <option value="river">River Geometry (Vector)</option>
+              <option value="hydrological">Hydrological Data (CSV)</option>
+              <option value="blockage">Blockage/Landslide (Vector)</option>
             </select>
           </div>
           
@@ -102,7 +107,7 @@ const DataManagement: React.FC = () => {
             marginBottom: '16px'
           }}>
             <input type="file" ref={fileInputRef} onChange={e => setFile(e.target.files?.[0] || null)} style={{ marginBottom: '8px' }} />
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Max size 500MB. Supported: .tif, .geojson, .zip</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Max size 500MB. Supported: .tif, .geojson, .zip, .csv</div>
           </div>
           
           <button className="btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={handleUpload} disabled={loading}>
@@ -204,6 +209,124 @@ const DataManagement: React.FC = () => {
               </table>
             </div>
           </div>
+        </div>
+      </div>
+      <div style={{ marginTop: '32px' }}>
+        <div className="card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3>Data Source / Hydrology (5 Real Indian Dam Systems)</h3>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                Authoritative government static fixtures for reproducible software development. Live: No (Static Fixtures).
+              </p>
+            </div>
+            <span style={{ 
+              padding: '4px 12px', borderRadius: '12px', fontSize: '12px', fontWeight: 600,
+              backgroundColor: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1'
+            }}>
+              GOVERNMENT_STATIC_FIXTURE (is_live: false)
+            </span>
+          </div>
+
+          <table className="dense-table">
+            <thead>
+              <tr>
+                <th>Dam / System</th>
+                <th>River</th>
+                <th>Operator / Source</th>
+                <th>Status / Type</th>
+                <th>Water Level</th>
+                <th>Inflow</th>
+                <th>Outflow</th>
+                <th>Observation Ref</th>
+              </tr>
+            </thead>
+            <tbody>
+              {fixtures.length === 0 ? (
+                <>
+                  <tr>
+                    <td style={{ fontWeight: 600 }}>Bhakra Dam</td>
+                    <td>Sutlej</td>
+                    <td>BBMB</td>
+                    <td><span style={{ padding: '2px 8px', borderRadius: '8px', fontSize: '11px', background: '#e0f2fe', color: '#0369a1', fontWeight: 600 }}>Static Reference</span></td>
+                    <td>1642.2 ft (500.54 m)</td>
+                    <td>17628 cusecs</td>
+                    <td>27613 cusecs</td>
+                    <td>23 Sep 2026 18:00</td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: 600 }}>Tehri Dam</td>
+                    <td>Bhagirathi</td>
+                    <td>THDC</td>
+                    <td><span style={{ padding: '2px 8px', borderRadius: '8px', fontSize: '11px', background: '#fef3c7', color: '#b45309', fontWeight: 600 }}>Static Forecast Ref</span></td>
+                    <td>825.96 m</td>
+                    <td>428.55 m³/s</td>
+                    <td>450.00 m³/s</td>
+                    <td>10 Sep 2026 09:01 (Fcst Issued 09-09)</td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: 600 }}>Hirakud Dam</td>
+                    <td>Mahanadi</td>
+                    <td>CWC / CEA</td>
+                    <td><span style={{ padding: '2px 8px', borderRadius: '8px', fontSize: '11px', background: '#f1f5f9', color: '#475569', fontWeight: 600 }}>Historical Reference</span></td>
+                    <td>187.28 m (FRL 192.02m)</td>
+                    <td style={{ color: 'var(--text-muted)' }}>NOT_PROVIDED</td>
+                    <td style={{ color: 'var(--text-muted)' }}>NOT_PROVIDED</td>
+                    <td>01 Aug 2025</td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: 600 }}>Sardar Sarovar</td>
+                    <td>Narmada</td>
+                    <td>SSNNL / CWC</td>
+                    <td><span style={{ padding: '2px 8px', borderRadius: '8px', fontSize: '11px', background: '#f1f5f9', color: '#475569', fontWeight: 600 }}>Historical Reference</span></td>
+                    <td>132.50 m (FRL 138.68m)</td>
+                    <td style={{ color: 'var(--text-muted)' }}>NOT_PROVIDED</td>
+                    <td style={{ color: 'var(--text-muted)' }}>NOT_PROVIDED</td>
+                    <td>01 Aug 2025</td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: 600 }}>Mettur Dam</td>
+                    <td>Cauvery</td>
+                    <td>TNWRD / CWC</td>
+                    <td><span style={{ padding: '2px 8px', borderRadius: '8px', fontSize: '11px', background: '#f1f5f9', color: '#475569', fontWeight: 600 }}>Historical Reference</span></td>
+                    <td>240.79 m (FRL 240.79m)</td>
+                    <td style={{ color: 'var(--text-muted)' }}>NOT_PROVIDED</td>
+                    <td style={{ color: 'var(--text-muted)' }}>NOT_PROVIDED</td>
+                    <td>01 Aug 2025</td>
+                  </tr>
+                </>
+              ) : (
+                fixtures.map(f => {
+                  const dam = f.dam;
+                  const hydro = f.hydrology;
+                  const obs = hydro?.observations?.[0] || {};
+                  const wl = obs.water_level;
+                  const inf = obs.inflow;
+                  const outf = obs.outflow;
+                  return (
+                    <tr key={dam.id}>
+                      <td style={{ fontWeight: 600 }}>{dam.dam_name}</td>
+                      <td>{dam.river_name}</td>
+                      <td>{dam.operator || hydro?.source?.provider}</td>
+                      <td>
+                        <span style={{ 
+                          padding: '2px 8px', borderRadius: '8px', fontSize: '11px', fontWeight: 600,
+                          backgroundColor: obs.observation_type === 'OBSERVATION' ? '#e0f2fe' : obs.observation_type === 'FORECAST' ? '#fef3c7' : '#f1f5f9',
+                          color: obs.observation_type === 'OBSERVATION' ? '#0369a1' : obs.observation_type === 'FORECAST' ? '#b45309' : '#475569'
+                        }}>
+                          {obs.status || obs.observation_type}
+                        </span>
+                      </td>
+                      <td>{wl ? `${wl.value} ${wl.unit}${wl.normalized_value !== wl.value ? ` (${wl.normalized_value} ${wl.normalized_unit})` : ''}` : 'N/A'}</td>
+                      <td>{inf && inf.value !== null ? `${inf.value} ${inf.unit}` : <span style={{ color: 'var(--text-muted)' }}>NOT_PROVIDED</span>}</td>
+                      <td>{outf && outf.value !== null ? `${outf.value} ${outf.unit}` : <span style={{ color: 'var(--text-muted)' }}>NOT_PROVIDED</span>}</td>
+                      <td>{obs.observation_date || obs.timestamp?.split('T')[0]}</td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

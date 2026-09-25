@@ -166,23 +166,35 @@ class BoundaryHandler:
         
         # Domain boundaries
         if self.bounds:
-            xmin, xmax, ymin, ymax = self.bounds
-            
-            hit_left = pos[:, 0] < xmin
-            pos[hit_left, 0] = xmin
-            vel[hit_left, 0] *= -self.restitution
-            
-            hit_right = pos[:, 0] > xmax
-            pos[hit_right, 0] = xmax
-            vel[hit_right, 0] *= -self.restitution
-            
-            hit_bottom = pos[:, 1] < ymin
-            pos[hit_bottom, 1] = ymin
-            vel[hit_bottom, 1] *= -self.restitution
-            
-            hit_top = pos[:, 1] > ymax
-            pos[hit_top, 1] = ymax
-            vel[hit_top, 1] *= -self.restitution
+            if len(self.bounds) >= 4:
+                xmin, xmax, ymin, ymax = self.bounds[:4]
+                
+                hit_left = pos[:, 0] < xmin
+                pos[hit_left, 0] = xmin
+                vel[hit_left, 0] *= -self.restitution
+                
+                hit_right = pos[:, 0] > xmax
+                pos[hit_right, 0] = xmax
+                vel[hit_right, 0] *= -self.restitution
+                
+                hit_bottom = pos[:, 1] < ymin
+                pos[hit_bottom, 1] = ymin
+                vel[hit_bottom, 1] *= -self.restitution
+                
+                hit_top = pos[:, 1] > ymax
+                pos[hit_top, 1] = ymax
+                vel[hit_top, 1] *= -self.restitution
+                
+            if len(self.bounds) == 6 and pos.shape[1] == 3:
+                zmin, zmax = self.bounds[4:]
+                
+                hit_bottom_z = pos[:, 2] < zmin
+                pos[hit_bottom_z, 2] = zmin
+                vel[hit_bottom_z, 2] *= -self.restitution
+                
+                hit_top_z = pos[:, 2] > zmax
+                pos[hit_top_z, 2] = zmax
+                vel[hit_top_z, 2] *= -self.restitution
         
         # Collect active rectangular boundaries (blockages + active breach parts)
         active_rects = list(self.blockages)

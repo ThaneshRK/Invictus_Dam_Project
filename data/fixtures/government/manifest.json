@@ -1,0 +1,81 @@
+{
+  "dataset_title": "Real Government-Sourced Static Development Fixture for 5 Indian Dam-Reservoir-River Systems",
+  "dataset_version": "1.0.0",
+  "acquired_at": "2026-09-24",
+  "source_type": "GOVERNMENT_STATIC_FIXTURE",
+  "is_live": false,
+  "is_synthetic": false,
+  "systems_count": 5,
+  "systems": [
+    {
+      "id": "bhakra",
+      "dam_name": "Bhakra Dam",
+      "reservoir_name": "Gobind Sagar",
+      "river_name": "Sutlej",
+      "state": "Himachal Pradesh",
+      "operator": "BBMB",
+      "dam_fixture": "dams/bhakra.json",
+      "reservoir_fixture": "reservoirs/bhakra.json",
+      "river_fixture": "rivers/sutlej.json",
+      "hydrology_fixture": "hydrology/bhakra.json",
+      "observation_type": "OBSERVATION",
+      "status": "Static Reference"
+    },
+    {
+      "id": "tehri",
+      "dam_name": "Tehri Dam",
+      "reservoir_name": "Tehri Reservoir",
+      "river_name": "Bhagirathi",
+      "state": "Uttarakhand",
+      "operator": "THDC",
+      "dam_fixture": "dams/tehri.json",
+      "reservoir_fixture": "reservoirs/tehri.json",
+      "river_fixture": "rivers/bhagirathi.json",
+      "hydrology_fixture": "hydrology/tehri.json",
+      "observation_type": "FORECAST",
+      "status": "Static Forecast Reference"
+    },
+    {
+      "id": "hirakud",
+      "dam_name": "Hirakud Dam",
+      "reservoir_name": "Hirakud Reservoir",
+      "river_name": "Mahanadi",
+      "state": "Odisha",
+      "operator": "Government of Odisha / CWC",
+      "dam_fixture": "dams/hirakud.json",
+      "reservoir_fixture": "reservoirs/hirakud.json",
+      "river_fixture": "rivers/mahanadi.json",
+      "hydrology_fixture": "hydrology/hirakud.json",
+      "observation_type": "HISTORICAL_REFERENCE",
+      "status": "Historical Reference"
+    },
+    {
+      "id": "sardar_sarovar",
+      "dam_name": "Sardar Sarovar Dam",
+      "reservoir_name": "Sardar Sarovar Reservoir",
+      "river_name": "Narmada",
+      "state": "Gujarat",
+      "operator": "SSNNL",
+      "dam_fixture": "dams/sardar_sarovar.json",
+      "reservoir_fixture": "reservoirs/sardar_sarovar.json",
+      "river_fixture": "rivers/narmada.json",
+      "hydrology_fixture": "hydrology/sardar_sarovar.json",
+      "observation_type": "HISTORICAL_REFERENCE",
+      "status": "Historical Reference"
+    },
+    {
+      "id": "mettur",
+      "dam_name": "Mettur Dam",
+      "reservoir_name": "Stanley Reservoir",
+      "river_name": "Cauvery",
+      "state": "Tamil Nadu",
+      "operator": "TNWRD",
+      "dam_fixture": "dams/mettur.json",
+      "reservoir_fixture": "reservoirs/mettur.json",
+      "river_fixture": "rivers/cauvery.json",
+      "hydrology_fixture": "hydrology/mettur.json",
+      "observation_type": "HISTORICAL_REFERENCE",
+      "status": "Historical Reference"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "id": "sardar_sarovar_reservoir",
+  "reservoir_name": "Sardar Sarovar Reservoir",
+  "dam_id": "sardar_sarovar",
+  "dam_name": "Sardar Sarovar Dam",
+  "river_name": "Narmada",
+  "state": "Gujarat",
+  "gross_capacity_mcm": 9500.0,
+  "live_capacity_mcm": 5800.0,
+  "surface_area_sqkm": 375.0,
+  "full_reservoir_level_m": 138.68,
+  "source": {
+    "source_type": "OPERATOR_STATIC_FIXTURE",
+    "is_live": false,
+    "is_synthetic": false,
+    "provider": "SSNNL",
+    "source_agency": "Sardar Sarovar Narmada Nigam Limited",
+    "source_url": "https://demo.ssnnl.in/",
+    "acquired_at": "2026-09-24"
+  }
+}

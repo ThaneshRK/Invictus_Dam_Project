@@ -18,6 +18,7 @@ function EditControl(props: { position?: any; draw?: any; onCreated?: (e: any) =
     map.addControl(drawControl);
 
     const onCreated = (e: any) => {
+      map.addLayer(e.layer);
       if (props.onCreated) props.onCreated(e);
     };
 
@@ -56,6 +57,9 @@ export default function ProjectWizard() {
 
   // Step 5: Data Readiness
   const [dataReadiness, setDataReadiness] = useState<any>(null);
+
+  // Step 4: Study Area
+  const [studyArea, setStudyArea] = useState<any>(null);
 
   // Step 6: Scenario
   const [scenarioParams, setScenarioParams] = useState<any>({});
@@ -102,7 +106,15 @@ export default function ProjectWizard() {
     }
   };
 
-  const handleNextToStep5 = () => {
+  const handleNextToStep5 = async () => {
+    if (studyArea && projectId) {
+      try {
+        // studyArea contains the raw geometry from layer.toGeoJSON().geometry
+        await api.put(`/projects/${projectId}`, { study_area: studyArea });
+      } catch (e) {
+        console.error("Failed to save study area", e);
+      }
+    }
     fetchDataReadiness();
     nextStep();
   };
@@ -122,8 +134,24 @@ export default function ProjectWizard() {
 
     if (projectId) {
       try {
+        let reservoirId = null;
+        let riverId = null;
+        if (activeDam && activeDam.source_record_id) {
+           try {
+             // Fetch relationship bindings from government data
+             const relRes = await api.get(`/government/dams/${activeDam.source_record_id}/readiness`);
+             const rels = relRes.data.relationships || [];
+             reservoirId = rels.find((r: any) => r.target_type === 'RESERVOIR')?.target_id || null;
+             riverId = rels.find((r: any) => r.target_type === 'RIVER')?.target_id || null;
+           } catch(err) {
+             console.error("No readiness found for dam", err);
+           }
+        }
+
         await api.put(`/projects/${projectId}`, { 
           selected_dam_id: activeDam ? activeDam.source_record_id : `loc_${Date.now()}`,
+          selected_reservoir_id: reservoirId,
+          selected_river_id: riverId,
           latitude: lat,
           longitude: lng,
           location_reference: activeDam ? activeDam.dam_name : searchQuery
@@ -168,6 +196,24 @@ export default function ProjectWizard() {
     return <Marker position={[lat, lng]} />;
   };
 
+  const KNOWN_DAMS = [
+    { id: 'bhakra', name: 'Bhakra Dam', river: 'Sutlej', state: 'Himachal Pradesh', lat: 31.4114, lng: 76.4333 },
+    { id: 'tehri', name: 'Tehri Dam', river: 'Bhagirathi', state: 'Uttarakhand', lat: 30.3781, lng: 78.4803 },
+    { id: 'hirakud', name: 'Hirakud Dam', river: 'Mahanadi', state: 'Odisha', lat: 21.5700, lng: 83.8700 },
+    { id: 'sardar_sarovar', name: 'Sardar Sarovar Dam', river: 'Narmada', state: 'Gujarat', lat: 21.8322, lng: 73.7483 },
+    { id: 'mettur', name: 'Mettur Dam', river: 'Cauvery', state: 'Tamil Nadu', lat: 11.8016, lng: 77.8018 }
+  ];
+
+  const findMatchingKnownDam = (lat: number, lng: number) => {
+    for (const dam of KNOWN_DAMS) {
+      const dlat = dam.lat - lat;
+      const dlng = dam.lng - lng;
+      const distKm = Math.sqrt(dlat * dlat + dlng * dlng) * 111; // approximate km
+      if (distKm < 10) return dam;
+    }
+    return null;
+  };
+
   const handleSearch = async () => {
     if (!searchQuery) return;
     try {
@@ -182,13 +228,22 @@ export default function ProjectWizard() {
         setLatStr(Math.abs(newLat).toFixed(4));
         setLngStr(Math.abs(newLng).toFixed(4));
 
-        const displayName = result.display_name ? result.display_name.split(',')[0] : searchQuery;
-        const matchedDam = {
-          dam_name: displayName,
-          source_record_id: `dam_${result.place_id || Date.now()}`,
-          metadata: { river: result.display_name || "Detected Location" }
-        };
-        setSelectedDam(matchedDam);
+        // Check if search result matches a known government fixture dam
+        const knownMatch = findMatchingKnownDam(newLat, newLng);
+        if (knownMatch) {
+          setSelectedDam({
+            dam_name: knownMatch.name,
+            source_record_id: knownMatch.id,
+            metadata: { river: knownMatch.river, state: knownMatch.state }
+          });
+        } else {
+          const displayName = result.display_name ? result.display_name.split(',')[0] : searchQuery;
+          setSelectedDam({
+            dam_name: displayName,
+            source_record_id: `dam_${result.place_id || Date.now()}`,
+            metadata: { river: result.display_name || "Detected Location" }
+          });
+        }
       } else {
         alert('Location not found');
       }
@@ -248,9 +303,49 @@ export default function ProjectWizard() {
 
         {step === 2 && (
           <div>
-            <h3>Step 2 — Location</h3>
-            <p>Search for a location or pick it on the map.</p>
+            <h3>Step 2 — Location & Dam System</h3>
+            <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Select one of the 5 verified static government dam systems or search for a location:</p>
             
+            <div style={{ marginTop: '12px', padding: '12px', backgroundColor: '#f0f9ff', borderRadius: '6px', border: '1px solid #bae6fd' }}>
+              <div style={{ fontSize: '12px', fontWeight: 600, color: '#0369a1', marginBottom: '8px' }}>
+                SELECT SUPPORTED INDIAN DAM SYSTEM (GOVERNMENT STATIC FIXTURE):
+              </div>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {[
+                  { id: 'bhakra', name: 'Bhakra Dam', river: 'Sutlej', state: 'Himachal Pradesh', lat: 31.4114, lng: 76.4333 },
+                  { id: 'tehri', name: 'Tehri Dam', river: 'Bhagirathi', state: 'Uttarakhand', lat: 30.3781, lng: 78.4803 },
+                  { id: 'hirakud', name: 'Hirakud Dam', river: 'Mahanadi', state: 'Odisha', lat: 21.5700, lng: 83.8700 },
+                  { id: 'sardar_sarovar', name: 'Sardar Sarovar Dam', river: 'Narmada', state: 'Gujarat', lat: 21.8322, lng: 73.7483 },
+                  { id: 'mettur', name: 'Mettur Dam', river: 'Cauvery', state: 'Tamil Nadu', lat: 11.8016, lng: 77.8018 }
+                ].map(p => (
+                  <button 
+                    key={p.id}
+                    className="btn-secondary"
+                    style={{ 
+                      fontSize: '12px', 
+                      padding: '6px 12px', 
+                      border: selectedDam?.source_record_id === p.id ? '2px solid var(--water-blue)' : '1px solid var(--border-color)',
+                      backgroundColor: selectedDam?.source_record_id === p.id ? '#e0f2fe' : '#ffffff',
+                      fontWeight: selectedDam?.source_record_id === p.id ? 600 : 400
+                    }}
+                    onClick={() => {
+                      setLat(p.lat);
+                      setLng(p.lng);
+                      setLatStr(p.lat.toFixed(4));
+                      setLngStr(p.lng.toFixed(4));
+                      setSelectedDam({
+                        dam_name: p.name,
+                        source_record_id: p.id,
+                        metadata: { river: p.river, state: p.state }
+                      });
+                    }}
+                  >
+                    {p.name} ({p.river})
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div style={{ display: 'flex', gap: '8px', marginTop: '16px', alignItems: 'center' }}>
               <input 
                 className="form-input" 
@@ -373,6 +468,10 @@ export default function ProjectWizard() {
                 <FeatureGroup>
                   <EditControl
                     position="topright"
+                    onCreated={(e) => {
+                      const layer = e.layer;
+                      setStudyArea(layer.toGeoJSON().geometry);
+                    }}
                     draw={{
                       circle: false,
                       circlemarker: false,

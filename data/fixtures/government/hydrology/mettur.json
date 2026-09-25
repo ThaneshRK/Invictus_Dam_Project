@@ -1,0 +1,77 @@
+{
+  "dam_id": "mettur",
+  "dam_name": "Mettur Dam",
+  "reservoir_name": "Stanley Reservoir",
+  "river_name": "Cauvery",
+  "observations": [
+    {
+      "timestamp": "2025-08-01T00:00:00+05:30",
+      "observation_date": "2025-08-01",
+      "observation_type": "HISTORICAL_REFERENCE",
+      "status": "Historical Reference",
+      "water_level": {
+        "value": 240.79,
+        "unit": "m",
+        "normalized_value": 240.79,
+        "normalized_unit": "m",
+        "availability": "AVAILABLE"
+      },
+      "full_reservoir_level": {
+        "value": 240.79,
+        "unit": "m",
+        "normalized_value": 240.79,
+        "normalized_unit": "m",
+        "availability": "AVAILABLE"
+      },
+      "inflow": null,
+      "inflow_availability": "NOT_PROVIDED",
+      "outflow": null,
+      "outflow_availability": "NOT_PROVIDED",
+      "storage": {
+        "value": 204.0,
+        "unit": "MCM",
+        "normalized_value": 204000000.0,
+        "normalized_unit": "m3",
+        "availability": "AVAILABLE"
+      },
+      "energy_content_present_level_mu": 203.96,
+      "provenance": {
+        "source_agency": "Tamil Nadu Water Resources Department / Central Electricity Authority (CEA)",
+        "source_dataset": "CEA Hydro Reservoir Report / NWIC TN River Discharge",
+        "source_url": "https://nwdp.nwic.gov.in/en/dataset/river-discharge-manual-dailly-tamil-nadu-surface-water-groundwater-department",
+        "observation_timestamp": "2025-08-01T00:00:00+05:30",
+        "observation_type": "HISTORICAL_REFERENCE",
+        "retrieved_timestamp": "2026-09-24T00:00:00Z",
+        "original_value": 240.79,
+        "original_unit": "m",
+        "normalized_value": 240.79,
+        "normalized_unit": "m",
+        "is_live": false,
+        "is_synthetic": false,
+        "source_type": "GOVERNMENT_STATIC_FIXTURE"
+      }
+    }
+  ],
+  "scenario_readiness": {
+    "DAM_BREAK": {
+      "status": "READY",
+      "reason": "Dam, reservoir, river, DEM provider, and reference water level are available."
+    },
+    "WATER_RELEASE": {
+      "status": "BLOCKED_NEEDS_TIME_SERIES",
+      "reason": "Requires release hydrograph time-series input. Outflow discharge is NOT_PROVIDED."
+    },
+    "RIVER_BLOCKAGE": {
+      "status": "BLOCKED_NEEDS_DISCHARGE",
+      "reason": "Requires discharge time series or outflow observation. Outflow discharge is NOT_PROVIDED."
+    }
+  },
+  "source": {
+    "provider": "TNWRD / CWC / CEA",
+    "source_agency": "TNWRD / CEA",
+    "source_url": "https://nwdp.nwic.gov.in/en/dataset/river-discharge-manual-dailly-tamil-nadu-surface-water-groundwater-department",
+    "is_live": false,
+    "is_synthetic": false,
+    "source_type": "GOVERNMENT_STATIC_FIXTURE"
+  }
+}

@@ -5,9 +5,10 @@ import os
 import rasterio
 from typing import Dict, Any
 from app.engines.base import SimulationEngine
-from app.engines.sph.solver import SPHSolver
+from app.engines.sph.solver import SPHSolverBase, SPH2DSolver, SPH3DSolver
 from app.engines.sph.boundary import TerrainHandler, DynamicBreach
 from app.engines.sph.writer import ResultWriter
+from app.engines.sph.builder import SPHInputBuilder
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -17,8 +18,8 @@ class SPHEngine(SimulationEngine):
     SPH Simulation Engine Implementation.
     Orchestrates the modular solver, inputs, and outputs.
     """
-    def __init__(self, scenario_config: Dict[str, Any]):
-        super().__init__(scenario_config)
+    def __init__(self, context: Any):
+        super().__init__(context)
         self.solver = None
         self.writer = None
         self.domain_bounds = [0.0, 100.0, 0.0, 100.0]
@@ -29,8 +30,9 @@ class SPHEngine(SimulationEngine):
         self.is_cancelled = False
         
         self.max_particles = settings.SPH_MAX_PARTICLES
-        self.scenario_type = self.config.get("metadata", {}).get("type", "DAM_BREAK")
-        self.is_benchmark = self.config.get("metadata", {}).get("is_benchmark", False)
+        st = self.context.scenario.scenario_type
+        self.scenario_type = st.value if hasattr(st, 'value') else str(st)
+        self.is_benchmark = False # Benchmarks should use a different testing engine path now
         
         self.diagnostics = {}
 
@@ -39,91 +41,73 @@ class SPHEngine(SimulationEngine):
         if self.scenario_type not in valid_types:
             self.error_message = f"Unknown scenario type: {self.scenario_type}"
             return False
-            
-        if not self.is_benchmark:
-            pass # Removed strict DEM check to allow fallback terrain handling
-                
         return True
 
     def prepare(self) -> None:
-        params = self.config.get("physics_parameters", {})
-        time_params = self.config.get("time_control", {})
-        
-        particle_spacing = params.get("particle_spacing", 1.0)
-        h = params.get("smoothing_length", 2.0)
-        
-        self.solver = SPHSolver(max_particles=self.max_particles, h=h)
-        
         if self.is_benchmark:
+            # Benchmark specific initialization
             self.domain_bounds = [0.0, 200.0, 0.0, 50.0]
-            start_x, end_x = 0.0, params.get("breach_width", 50.0)
-            start_y, end_y = 0.0, params.get("initial_water_level", 20.0)
+            particle_spacing = self.context.scenario.parameters.get("particle_spacing", 1.0) if self.context.scenario.parameters else 1.0
+            h = self.context.scenario.parameters.get("smoothing_length", 2.0) if self.context.scenario.parameters else 2.0
+            self.solver = SPH2DSolver(max_particles=self.max_particles, h=h)
             
-            # Simple static breach for benchmark if not provided
+            start_x, end_x = 0.0, self.context.scenario.parameters.get("breach_width", 50.0) if self.context.scenario.parameters else 50.0
+            start_y, end_y = 0.0, self.context.scenario.parameters.get("initial_water_level", 20.0) if self.context.scenario.parameters else 20.0
+            
             breach = DynamicBreach(
-                xmin=50.0, xmax=55.0, ymin=0.0, ymax=50.0, 
-                failure_time=params.get("failure_time", 0.0), 
-                formation_time=params.get("formation_time", 1.0), 
+                xmin=50.0, xmax=55.0, ymin=0.0, ymax=50.0,
+                failure_time=self.context.scenario.parameters.get("failure_time", 0.0) if self.context.scenario.parameters else 0.0,
+                formation_time=self.context.scenario.parameters.get("formation_time", 1.0) if self.context.scenario.parameters else 1.0,
                 final_width=end_x - start_x
             )
-            
             try:
                 self.solver.init_benchmark_dam_break(start_x, end_x, start_y, end_y, particle_spacing, self.domain_bounds, breach)
             except ValueError as e:
                 self.status = "FAILED"
                 self.error_message = str(e)
                 return
-        else:
-            source_datasets = self.config.get("source_datasets", [])
-            dem_info = next((ds for ds in source_datasets if ds.get("dataset_type") == "DEM"), None)
             
-            # Load real DEM
-            if dem_info and "file_path" in dem_info and os.path.exists(dem_info["file_path"]):
-                terrain = TerrainHandler.from_geotiff(dem_info["file_path"])
-                # Bounds from raster bounds (left, right, bottom, top) -> [xmin, xmax, ymin, ymax]
-                with rasterio.open(dem_info["file_path"]) as src:
-                    self.domain_bounds = [src.bounds.left, src.bounds.right, src.bounds.bottom, src.bounds.top]
-            else:
-                # Mock fallback if filepath not provided
-                dem_grid = np.zeros((100, 100))
-                cell_size = dem_info.get("resolution", 2.0) if dem_info else 2.0
-                terrain = TerrainHandler(dem_grid=dem_grid, transform=rasterio.transform.from_origin(0, 100, cell_size, cell_size))
-                self.domain_bounds = [0.0, 100.0, 0.0, 100.0]
-                
-            # Initial Water Polygon [xmin, xmax, ymin, ymax]
-            water_poly = params.get("initial_water_polygon", [0.0, 50.0, 0.0, 20.0])
-            initial_water_surface_elevation = params.get("initial_water_level", 20.0)
+            self.writer = ResultWriter(bounds=self.domain_bounds, resolution=particle_spacing)
+            duration_s = self.context.scenario.simulation_duration * 3600
+            duration_s = min(duration_s, 5.0)
+            self.total_steps = int(duration_s / self.solver.integrator.max_dt)
+            self.duration_s = duration_s
+            self.status = "PREPARED"
+            return
+
+        try:
+            builder = SPHInputBuilder(self.context)
+            inputs = builder.build()
+        except ValueError as e:
+            self.status = "FAILED"
+            self.error_message = str(e)
+            return
             
-            blockages = []
-            breach = None
-            if self.scenario_type == "RIVER_BLOCKAGE":
-                blockages.append({
-                    "xmin": 80.0, "xmax": 90.0, 
-                    "ymin": 0.0, "ymax": 50.0
-                })
-            elif self.scenario_type == "DAM_BREAK":
-                # User asked for dynamic breach
-                breach = DynamicBreach(
-                    xmin=water_poly[1], xmax=water_poly[1] + 5.0, 
-                    ymin=water_poly[2], ymax=water_poly[3],
-                    failure_time=params.get("failure_time", 2.0),
-                    formation_time=params.get("formation_time", 5.0),
-                    final_width=params.get("final_breach_width", 20.0)
-                )
-                
-            try:
-                self.solver.init_real_scenario(
-                    self.domain_bounds, water_poly, initial_water_surface_elevation, 
-                    particle_spacing, terrain, blockages, breach
-                )
-            except ValueError as e:
-                self.status = "FAILED"
-                self.error_message = str(e)
-                return
+        self.domain_bounds = inputs["domain_bounds"]
+        particle_spacing = inputs["particle_spacing"]
+        h = inputs["smoothing_length"]
+        
+        # Determine 2D vs 3D based on context engine choice if needed, but default 2D
+        self.solver = SPH2DSolver(max_particles=self.max_particles, h=h)
+        
+        try:
+            self.solver.init_real_scenario(
+                self.domain_bounds, 
+                inputs["water_poly"], 
+                inputs["initial_water_level"], 
+                particle_spacing, 
+                inputs["terrain"], 
+                inputs["blockages"], 
+                inputs["breach"]
+            )
+        except ValueError as e:
+            self.status = "FAILED"
+            self.error_message = str(e)
+            return
         
         self.writer = ResultWriter(bounds=self.domain_bounds, resolution=particle_spacing)
         
-        duration_s = time_params.get("duration_hours", 0.05) * 3600
+        duration_s = inputs["duration_s"]
         duration_s = min(duration_s, 5.0) # testing cap
         
         self.total_steps = int(duration_s / self.solver.integrator.max_dt)
@@ -137,7 +121,7 @@ class SPHEngine(SimulationEngine):
         output_time_interval = 0.5 
         next_output_time = output_time_interval
         
-        failure_time = self.config.get("physics_parameters", {}).get("failure_time", 2.0)
+        failure_time = self.context.scenario.parameters.get("failure_time", 2.0) if self.context.scenario.parameters else 2.0
         
         try:
             while self.solver.time < self.duration_s:

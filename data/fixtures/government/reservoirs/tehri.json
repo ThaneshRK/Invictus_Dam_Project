@@ -1,0 +1,21 @@
+{
+  "id": "tehri_reservoir",
+  "reservoir_name": "Tehri Reservoir",
+  "dam_id": "tehri",
+  "dam_name": "Tehri Dam",
+  "river_name": "Bhagirathi",
+  "state": "Uttarakhand",
+  "gross_capacity_mcm": 3540.0,
+  "live_capacity_mcm": 2620.0,
+  "surface_area_sqkm": 52.0,
+  "full_reservoir_level_m": 830.00,
+  "source": {
+    "source_type": "OPERATOR_STATIC_FIXTURE",
+    "is_live": false,
+    "is_synthetic": false,
+    "provider": "THDC",
+    "source_agency": "THDC India Limited",
+    "source_url": "https://ffs.thdcil.in/THDC/Default.aspx",
+    "acquired_at": "2026-09-24"
+  }
+}

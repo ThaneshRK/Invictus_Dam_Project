@@ -3,25 +3,26 @@ import numpy as np
 from app.engines.sph.engine import SPHEngine
 
 def test_sph_level_2_benchmark():
-    config = {
-        "metadata": {
-            "type": "DAM_BREAK",
-            "is_benchmark": True
-        },
-        "physics_parameters": {
-            "particle_spacing": 2.0,
-            "smoothing_length": 4.0,
-            "breach_width": 20.0,
-            "initial_water_level": 10.0,
-            "failure_time": 0.0,
-            "formation_time": 0.1
-        },
-        "time_control": {
-            "duration_hours": 0.0005 # ~1.8 seconds simulation
-        }
-    }
-    
-    engine = SPHEngine(config)
+    class MockContext:
+        class MockScenario:
+            class ScenarioType:
+                value = "DAM_BREAK"
+            scenario_type = ScenarioType()
+            simulation_duration = 0.0005
+            parameters = {
+                "particle_spacing": 2.0,
+                "smoothing_length": 4.0,
+                "breach_width": 20.0,
+                "initial_water_level": 10.0,
+                "failure_time": 0.0,
+                "formation_time": 0.1
+            }
+        scenario = MockScenario()
+        dem = None
+        hydrology = None
+        
+    engine = SPHEngine(MockContext())
+    engine.is_benchmark = True
     assert engine.validate()
     engine.prepare()
     assert engine.status == "PREPARED"

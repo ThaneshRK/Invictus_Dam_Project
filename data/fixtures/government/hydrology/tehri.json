@@ -1,0 +1,74 @@
+{
+  "dam_id": "tehri",
+  "dam_name": "Tehri Dam",
+  "reservoir_name": "Tehri Reservoir",
+  "river_name": "Bhagirathi",
+  "observations": [
+    {
+      "timestamp": "2026-09-10T09:01:00+05:30",
+      "forecast_issued": "2026-09-09T09:01:00+05:30",
+      "observation_type": "FORECAST",
+      "status": "Static Forecast Reference",
+      "water_level": {
+        "value": 825.960,
+        "unit": "m",
+        "normalized_value": 825.960,
+        "normalized_unit": "m",
+        "availability": "AVAILABLE"
+      },
+      "inflow": {
+        "value": 428.550,
+        "unit": "m3/s",
+        "normalized_value": 428.550,
+        "normalized_unit": "m3/s",
+        "availability": "AVAILABLE"
+      },
+      "outflow": {
+        "value": 450.00,
+        "unit": "m3/s",
+        "normalized_value": 450.00,
+        "normalized_unit": "m3/s",
+        "availability": "AVAILABLE"
+      },
+      "storage": null,
+      "provenance": {
+        "source_agency": "THDC India Limited",
+        "source_dataset": "THDC Flood Forecasting System",
+        "source_url": "https://ffs.thdcil.in/THDC/Default.aspx",
+        "observation_timestamp": "2026-09-10T09:01:00+05:30",
+        "forecast_issued_timestamp": "2026-09-09T09:01:00+05:30",
+        "observation_type": "FORECAST",
+        "retrieved_timestamp": "2026-09-24T00:00:00Z",
+        "original_value": 825.960,
+        "original_unit": "m",
+        "normalized_value": 825.960,
+        "normalized_unit": "m",
+        "is_live": false,
+        "is_synthetic": false,
+        "source_type": "OPERATOR_STATIC_FIXTURE"
+      }
+    }
+  ],
+  "scenario_readiness": {
+    "DAM_BREAK": {
+      "status": "READY",
+      "reason": "Dam, reservoir, river, DEM provider, and forecast reference water level are available."
+    },
+    "WATER_RELEASE": {
+      "status": "BLOCKED_NEEDS_TIME_SERIES",
+      "reason": "Requires release hydrograph time-series input. Forecast single point observation is insufficient."
+    },
+    "RIVER_BLOCKAGE": {
+      "status": "READY_WITH_SINGLE_DISCHARGE",
+      "reason": "River, DEM, and forecast outflow discharge are available."
+    }
+  },
+  "source": {
+    "provider": "THDC",
+    "source_agency": "THDC India Limited",
+    "source_url": "https://ffs.thdcil.in/THDC/Default.aspx",
+    "is_live": false,
+    "is_synthetic": false,
+    "source_type": "OPERATOR_STATIC_FIXTURE"
+  }
+}

@@ -78,20 +78,22 @@ async def delete_scenario(scenario_id: uuid.UUID, db: AsyncSession = Depends(get
     await db.delete(scenario)
     await db.commit()
 
+from app.core.simulation_context import SimulationInputContext
+
 @router.post("/scenarios/{scenario_id}/validate")
 async def validate_scenario_configuration(scenario_id: uuid.UUID, db: AsyncSession = Depends(get_db_session)):
     scenario = await db.get(Scenario, scenario_id)
     if not scenario:
         raise HTTPException(status_code=404, detail="Scenario not found")
         
-    if scenario.source_datasets:
-        await ScenarioService.validate_datasets(db, scenario.project_id, scenario.source_datasets)
-    else:
-        raise HTTPException(status_code=400, detail="Missing required datasets (No datasets linked)")
+    # Full Phase 1 Validation (DAM -> RESERVOIR -> RIVER -> STUDY AREA -> DEM -> HYDROLOGY)
+    ctx = await SimulationInputContext.build(db, scenario.project_id, scenario_id)
+    scenario_def = ctx.to_scenario_definition()
         
     config = ScenarioService.serialize_for_engine(scenario)
     
     return {
         "status": "valid",
+        "scenario_definition": scenario_def.model_dump(),
         "configuration": config
     }

@@ -37,8 +37,8 @@ class Delft3DEngine(SimulationEngine):
     5. Returns results in the common format
     """
 
-    def __init__(self, scenario_config: Dict[str, Any], workspace_dir: Optional[str] = None):
-        super().__init__(scenario_config)
+    def __init__(self, context: Any, workspace_dir: Optional[str] = None):
+        super().__init__(context)
         self.workspace_root = workspace_dir or settings.DELFT3D_WORKSPACE_ROOT
         self.executor = None
         self.builder = None
@@ -57,10 +57,8 @@ class Delft3DEngine(SimulationEngine):
             self.error_message = f"run_dflowfm.sh not found at {run_script}"
             return False
 
-        # Validate scenario type
-        scenario_type = self.config.get("scenario_type", "")
-        if not scenario_type:
-            scenario_type = self.config.get("metadata", {}).get("type", "")
+        st = self.context.scenario.scenario_type
+        scenario_type = st.value if hasattr(st, 'value') else str(st)
 
         valid_types = ["DAM_BREAK", "WATER_RELEASE", "CONTROLLED_RELEASE", "RIVER_BLOCKAGE"]
         if scenario_type.upper() not in valid_types:
@@ -77,7 +75,7 @@ class Delft3DEngine(SimulationEngine):
             self.builder = Delft3DModelBuilder(
                 workspace_root=self.workspace_root,
                 simulation_id=self.simulation_id,
-                config=self.config
+                context=self.context
             )
 
             mdu_filename = self.builder.build()

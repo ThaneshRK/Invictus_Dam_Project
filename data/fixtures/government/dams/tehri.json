@@ -1,0 +1,27 @@
+{
+  "id": "tehri",
+  "dam_name": "Tehri Dam",
+  "reservoir_name": "Tehri Reservoir",
+  "river_name": "Bhagirathi",
+  "state": "Uttarakhand",
+  "country": "India",
+  "latitude": 30.3781,
+  "longitude": 78.4803,
+  "completion_year": 2005,
+  "dam_height_m": 260.50,
+  "dam_length_m": 592.70,
+  "gross_storage_bcm": 3.54,
+  "effective_storage_bcm": 2.62,
+  "reservoir_area_sqkm": 52.0,
+  "operator": "THDC India Limited",
+  "source": {
+    "source_type": "OPERATOR_STATIC_FIXTURE",
+    "is_live": false,
+    "is_synthetic": false,
+    "provider": "THDC",
+    "source_agency": "THDC India Limited / CWC",
+    "source_url": "https://ffs.thdcil.in/THDC/Default.aspx",
+    "source_dataset": "THDC Flood Forecasting System / CWC NRLD 2019",
+    "acquired_at": "2026-09-24"
+  }
+}

@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Any, Dict
 from pydantic import BaseModel, Field
 import uuid
 from datetime import datetime
@@ -35,6 +35,7 @@ class ProjectUpdate(BaseModel):
     location_source: Optional[str] = None
     location_reference: Optional[str] = None
     data_readiness_status: Optional[float] = None
+    study_area: Optional[Dict[str, Any]] = None
 
 class ProjectRead(ProjectBase):
     id: uuid.UUID

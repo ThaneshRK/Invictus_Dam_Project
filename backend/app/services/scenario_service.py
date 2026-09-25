@@ -52,7 +52,7 @@ class ScenarioService:
             "metadata": {
                 "scenario_id": str(scenario.id),
                 "name": scenario.name,
-                "type": scenario.scenario_type.value,
+                "type": scenario.scenario_type.value if hasattr(scenario.scenario_type, 'value') else str(scenario.scenario_type),
             },
             "time_control": {
                 "duration_hours": scenario.simulation_duration,

@@ -1,0 +1,14 @@
+{
+  "river_id": "sutlej",
+  "river_name": "Sutlej",
+  "associated_dam_id": "bhakra",
+  "basin": "Indus Basin",
+  "state": "Himachal Pradesh / Punjab",
+  "source": {
+    "source_type": "GOVERNMENT_STATIC_FIXTURE",
+    "is_live": false,
+    "is_synthetic": false,
+    "provider": "CWC NRLD",
+    "source_url": "https://www.cwc.gov.in/sites/default/files/nrld-2019.pdf"
+  }
+}

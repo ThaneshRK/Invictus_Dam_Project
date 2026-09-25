@@ -1,9 +1,10 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.logger import logger
-from app.api.endpoints import projects, datasets, preprocessing, scenarios, results, comparison, exports, jobs, hadr, satellite, location_intelligence
+from app.api.endpoints import projects, datasets, preprocessing, scenarios, results, comparison, exports, jobs, hadr, satellite, location_intelligence, assets
 import time
 import traceback
 
@@ -20,6 +21,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.mount("/storage", StaticFiles(directory="storage"), name="storage")
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -55,6 +58,7 @@ app.include_router(exports.router, prefix=settings.API_V1_STR, tags=["exports"])
 app.include_router(jobs.router, prefix=settings.API_V1_STR, tags=["jobs"])
 app.include_router(hadr.router, prefix=settings.API_V1_STR, tags=["hadr"])
 app.include_router(satellite.router, prefix=settings.API_V1_STR, tags=["satellite"])
+app.include_router(assets.router, prefix=f"{settings.API_V1_STR}/projects", tags=["assets"])
 from app.api.endpoints import government
 app.include_router(government.router, prefix=f"{settings.API_V1_STR}/government", tags=["government"])
 logger.info(f"Starting {settings.PROJECT_NAME} Backend")

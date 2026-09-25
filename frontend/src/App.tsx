@@ -14,6 +14,7 @@ import Exports from './components/Exports';
 import HADRImpact from './components/HADRImpact';
 import Satellite from './components/Satellite';
 import SystemHealth from './components/SystemHealth';
+import AssetAlignment from './components/AssetAlignment';
 import './index.css';
 
 function App() {
@@ -34,6 +35,7 @@ function App() {
             <Route path="/exports" element={<Exports />} />
             <Route path="/hadr" element={<HADRImpact />} />
             <Route path="/satellite" element={<Satellite />} />
+            <Route path="/assets/align" element={<AssetAlignment />} />
             <Route path="/health" element={<SystemHealth />} />
           </Routes>
         </AppShell>

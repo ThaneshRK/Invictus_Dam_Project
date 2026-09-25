@@ -65,6 +65,18 @@ async def update_project(project_id: uuid.UUID, project_in: ProjectUpdate, db: A
         raise HTTPException(status_code=404, detail="Project not found")
     
     update_data = project_in.model_dump(exclude_unset=True)
+    
+    # Handle study_area GeoJSON → PostGIS geometry conversion
+    if 'study_area' in update_data and update_data['study_area'] is not None:
+        from shapely.geometry import shape
+        from geoalchemy2.shape import from_shape
+        try:
+            geom = shape(update_data['study_area'])
+            update_data['study_area'] = from_shape(geom, srid=4326)
+        except Exception as e:
+            logger.error(f"Failed to convert study_area GeoJSON: {e}")
+            raise HTTPException(status_code=400, detail=f"Invalid study area geometry: {str(e)}")
+    
     for field, value in update_data.items():
         setattr(project, field, value)
         
